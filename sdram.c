@@ -4,8 +4,9 @@
 #include "sdram.h"
 
 // Unit: 0.1ns
-#define T_TO_CLK(t)	DIV_CEIL((uint64_t)(t) * SDRAM_CLK_RATE, 10000000000)
+#define T_TO_CLK(t)	DIV_CEIL((uint32_t)(t) * SDRAM_CLK_MHZ, 10000)
 
+#pragma packed(push, 1)
 static struct sdram_t {
 	_IO uint32_t DMCR;
 	_IO uint16_t RTCSR;
@@ -14,17 +15,32 @@ static struct sdram_t {
 	uint16_t _RESERVED1;
 	_IO uint16_t RTCOR;
 	uint16_t _RESERVED2;
+#if JZ4740
 	_IO uint32_t DMAR;
 	uint8_t _RESERVED3[0xa000 - 0x0094];
 	_IO uint8_t SDMR[0];
+#elif JZ4755
+	_IO uint32_t DMAR1;
+	_IO uint32_t DMAR2;
+	uint8_t _RESERVED3[0x8000 - 0x0098];
+	_IO uint8_t SDMR[0];
+#endif
 } * const sdram = SDRAM_BASE;
 
 void sdram_init(void)
 {
 	static const struct sdram_config_t *cfg = &config.sdram;
 
+#if JZ4740
 	// Disable bus release, stop auto refresh
 	*BCR = 0;
+#elif JZ4755
+	// Configure bus share
+	if (fw_args->is_busshare)
+		*BCR = 0 << 2;
+	else
+		*BCR = 1 << 2;
+#endif
 	sdram->RTCSR = 0;
 
 	const unsigned ref = T_TO_CLK(cfg->tref);
@@ -32,6 +48,7 @@ void sdram_init(void)
 	const unsigned rcd = T_TO_CLK(cfg->trcd);
 	const unsigned rp = T_TO_CLK(cfg->trp);
 	const unsigned rc = T_TO_CLK(cfg->trc);
+	const unsigned chip_bank = 0;	// Only on JZ4755
 
 	static const unsigned rc_tbl[] = {
 		0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7};
@@ -40,9 +57,10 @@ void sdram_init(void)
 		(cfg->bw16 << 31) | ((cfg->ncol - 8) << 26) |
 		(0 << 25) | (0 << 24) | (0 << 23) |
 		((cfg->nrow - 11) << 20) | (cfg->bank4 << 19) |
-		(0 << 18) | (1 << 17) | ((ras - 4) << 13) | ((rcd - 1) << 11) |
+		(0 << 18) | (1 << 17) | (chip_bank << 16) |
+		((ras - 4) << 13) | ((rcd - 1) << 11) |
 		((rp - 1) << 8) | ((cfg->dpl - 1) << 5) |
-		(rc_tbl[rc] << 2) | ((cfg->cas - 1) << 0);
+		((rc / 2) << 2) | ((cfg->cas - 1) << 0);
 
 	const uint16_t mode =
 		(cfg->burst << 9) | (cfg->cas << 4) |
@@ -50,7 +68,7 @@ void sdram_init(void)
 
 	// Power up, wait for 200us with clock started
 	sdram->DMCR = dmcr;
-	for (int i = 0; i < (uint64_t)200 * SYS_CLK_RATE / 1000000; i++)
+	for (unsigned i = 0; i < 200 * SYS_CLK_MHZ; i++)
 		asm("nop");
 
 	// Precharge all banks
@@ -69,7 +87,13 @@ void sdram_init(void)
 	// Mode register set
 	sdram->SDMR[mode] = 0;
 
-	// Map to default SDRAM bank
+#if JZ4740
+	// SDRAM bank map
 	sdram->DMAR = 0x000020f8;
 	*BCR = (1 << 1);
+#elif JZ4755
+	// SDRAM bank map
+	sdram->DMAR1 = 0x000020f8;
+	sdram->DMAR2 = 0x000028f8;
+#endif
 }

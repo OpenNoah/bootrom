@@ -1,8 +1,11 @@
 #include "io.h"
 #include "lcd.h"
+#include "cgu.h"
 #include "gpio.h"
 #include "config.h"
 
+#if JZ4740
+#pragma packed(push, 1)
 typedef struct hw_lcd_t {
 	_IO uint32_t LCDCFG;
 	_IO uint32_t LCDVSYNC;
@@ -32,6 +35,61 @@ typedef struct hw_lcd_t {
 	_I  uint32_t LCDFID1;
 	_I  uint32_t LCDCMD1;
 } hw_lcd_t;
+#elif JZ4755
+#pragma packed(push, 1)
+typedef struct hw_lcd_t {
+	/* 0x0000 */ _IO uint32_t LCDCFG;
+	/* 0x0004 */ _IO uint32_t LCDVSYNC;
+	/* 0x0008 */ _IO uint32_t LCDHSYNC;
+	/* 0x000c */ _IO uint32_t LCDVAT;
+	/* 0x0010 */ _IO uint32_t LCDDAH;
+	/* 0x0014 */ _IO uint32_t LCDDAV;
+	/* 0x0018 */ _IO uint32_t LCDPS;
+	/* 0x001c */ _IO uint32_t LCDCLS;
+	/* 0x0020 */ _IO uint32_t LCDSPL;
+	/* 0x0024 */ _IO uint32_t LCDREV;
+					 uint32_t RESERVED_VAR[2];
+	/* 0x0030 */ _IO uint32_t LCDCTRL;
+	/* 0x0034 */ _IO uint32_t LCDSTATE;
+	/* 0x0038 */ _IO uint32_t LCDIID;
+					 uint32_t RESERVED_VAR[1];
+	/* 0x0040 */ _IO uint32_t LCDDA0;
+	/* 0x0044 */ _IO uint32_t LCDSA0;
+	/* 0x0048 */ _IO uint32_t LCDFID0;
+	/* 0x004c */ _IO uint32_t LCDCMD0;
+	/* 0x0050 */ _IO uint32_t LCDDA1;
+	/* 0x0054 */ _IO uint32_t LCDSA1;
+	/* 0x0058 */ _IO uint32_t LCDFID1;
+	/* 0x005c */ _IO uint32_t LCDCMD1;
+	/* 0x0060 */ _IO uint32_t LCDOFFS0;
+	/* 0x0064 */ _IO uint32_t LCDPW0;
+	/* 0x0068 */ _IO uint32_t LCDCNUM0;
+	/* 0x006c */ _IO uint32_t LCDDESSIZE0;
+	/* 0x0070 */ _IO uint32_t LCDOFFS1;
+	/* 0x0074 */ _IO uint32_t LCDPW1;
+	/* 0x0078 */ _IO uint32_t LCDCNUM1;
+	/* 0x007c */ _IO uint32_t LCDDESSIZE1;
+					 uint32_t RESERVED_VAR[4];
+	/* 0x0090 */ _IO uint32_t LCDRGBC;
+					 uint32_t RESERVED_VAR[3];
+	/* 0x0100 */ _IO uint16_t LCDOSDC;
+					 uint16_t RESERVED_VAR[1];
+	/* 0x0104 */ _IO uint16_t LCDOSDCTRL;
+					 uint16_t RESERVED_VAR[1];
+	/* 0x0108 */ _IO uint16_t LCDOSDS;
+					 uint16_t RESERVED_VAR[1];
+	/* 0x010c */ _IO uint32_t LCDBGC;
+	/* 0x0110 */ _IO uint32_t LCDKEY0;
+	/* 0x0114 */ _IO uint32_t LCDKEY1;
+	/* 0x0118 */ _IO uint8_t  LCDALPHA;
+					 uint8_t  RESERVED_VAR[3];
+	/* 0x011c */ _IO uint32_t LCDIPUR;
+	/* 0x0120 */ _IO uint32_t LCDXYP0;
+	/* 0x0124 */ _IO uint32_t LCDXYP1;
+	/* 0x0128 */ _IO uint32_t LCDSIZE0;
+	/* 0x012c */ _IO uint32_t LCDSIZE1;
+} hw_lcd_t;
+#endif
 
 static hw_lcd_t *lcd = LCD_BASE;
 
@@ -49,6 +107,8 @@ static int desc_idx = 0;
 
 void lcd_init(void)
 {
+	cgu_clk_enable(CGU_CLKGR_LCD);
+
 	lcd->LCDCTRL = 0;
 	lcd->LCDCFG = (0 << 31) | (1 << 23) | (1 << 22) | (1 << 21) |
 		      (1 << 20) | (0 << 19) | (0 << 18) | (0 << 17) |

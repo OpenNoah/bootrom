@@ -1,6 +1,7 @@
+#include "config.h"
 #include "io.h"
 #include "gpio.h"
-#include "config.h"
+#include "cgu.h"
 #include "uart.h"
 
 #define LINE_BUFFER_SIZE	32
@@ -33,24 +34,36 @@ struct hw_uart_t {
 	_IO uint32_t UACR;
 };
 
+#if JZ4740
 static struct hw_uart_t * const uart = UART0_BASE;
+#elif JZ4755
+static struct hw_uart_t * const uart = UART1_BASE;
+#endif
 
 void uart_init(void)
 {
+#if JZ4755
+	cgu_clk_enable(CGU_CLKGR_UART1);
+#endif
+
 	// Disable UART
 	uart->UFCR = 0;
 	// DLAB = 1, 8-bit
 	uart->ULCR = 0b10000011;
 
 	// Baud rate calculations
-#if (EXT_CLK_RATE == MHZ(12)) && (BAUDRATE == 115200)
-	uart->UMR = 17;
-	uart->UACR = 594;
-	uart->UDLLR = 6;
-	uart->UDLHR = 0;
-#else
-#error Unsupported baud rate
-#endif
+	if (cgu_uart_clk_rate() == MHZ(12) && BAUDRATE == 115200) {
+		uart->UMR = 17;
+		uart->UACR = 594;
+		uart->UDLLR = 6;
+		uart->UDLHR = 0;
+	} else {
+		// Anyway, I haven't implemented baudrate calculations
+		uart->UMR = 17;
+		uart->UACR = 594;
+		uart->UDLLR = 6;
+		uart->UDLHR = 0;
+	}
 
 	// DLAB = 0, 8-bit
 	uart->ULCR = 0b00000011;

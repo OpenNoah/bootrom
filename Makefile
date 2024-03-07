@@ -1,8 +1,7 @@
-VARIANT	?= 2150
-VERSION	:= 0
-NAME	:= nandboot_np$(VARIANT)
+VARIANT	?= d88
+NAME	:= usbboot_$(VARIANT)
 
-SRC	:= main.c uart.c wdt.c helper.c keypad.c gpio.c pll.c sdram.c nand.c lcd.c
+SRC	:= main.c cgu.c gpio.c uart.c sdram.c #lcd.c #wdt.c helper.c keypad.c nand.c
 SRC	+= startup.S
 
 OBJ	= $(patsubst %.S,%.o,$(SRC:%.c=%.o))
@@ -17,41 +16,33 @@ SIZE	:= $(CROSS)size
 OBJCOPY	:= $(CROSS)objcopy
 
 ARGS	= -mips1 -g -Os -mno-abicalls -fno-pic -fno-pie -nostdlib -flto -ffreestanding
-DEFS	= -DVARIANT=0x$(VARIANT) -DVERSION=$(VERSION)
+DEFS	= -DVARIANT=VARIANT_$(shell echo '$(VARIANT)' | tr '[:lower:]' '[:upper:]')
 CFLAGS	= $(ARGS) $(DEFS)
 ASFLAGS	= $(ARGS) $(DEFS)
-LDFLAGS	= $(ARGS) -Xlinker --gc-sections -T nandboot.ld
+LDFLAGS	= $(ARGS) -Xlinker --gc-sections
 
 .DELETE_ON_ERROR:
 
 .PHONY: all
-all: $(NAME)-nand.bin
+all: stage1/$(NAME)_stage1.bin
 
 # Fill the backup section
-CLEAN	+= $(NAME)-nand.bin
-%-nand.bin: %-padded.bin
-	cat $< $< > $@
-
-CLEAN	+= $(NAME)-padded.bin
-%-padded.bin: %.bin
-	$(OBJCOPY) -I binary -O binary --gap-fill 0xff --pad-to 0x2000 $< $@
-
-CLEAN	+= $(NAME).bin
 %.bin: %.elf
 	$(OBJCOPY) -O binary --gap-fill 0xff $< $@
 
-CLEAN	+= $(NAME).elf
-$(NAME).elf: $(OBJ)
-	$(LD) -o $@ $^ $(LDFLAGS)
+stage1/%.elf: $(OBJ:%.o=stage1/%.o) | stage1
+	$(LD) -o $@ $^ $(LDFLAGS) -T stage1.ld
 	$(SIZE) $@
 
-CLEAN	+= $(OBJ)
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $<
+stage1/%.o: %.c | stage1
+	$(CC) -DSTAGE=1 $(CFLAGS) -o $@ -c $<
 
-%.o: %.S
-	$(AS) $(ASFLAGS) -o $@ -c $<
+stage1/%.o: %.S | stage1
+	$(AS) -DSTAGE=1 $(ASFLAGS) -o $@ -c $<
+
+stage1 stage2: %:
+	mkdir -p $@
 
 .PHONY: clean
 clean:
-	rm -f $(CLEAN)
+	rm -rf stage1 stage2

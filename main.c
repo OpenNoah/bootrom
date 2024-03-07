@@ -1,14 +1,14 @@
 #include <stdint.h>
+#include "config.h"
+#include "cgu.h"
 #include "gpio.h"
 #include "uart.h"
-#include "wdt.h"
-#include "pll.h"
-#include "lcd.h"
 #include "sdram.h"
+#include "lcd.h"
+#if 0
+#include "wdt.h"
 #include "nand.h"
 #include "keypad.h"
-#include "helper.h"
-#include "config.h"
 
 #define BUFFER_SIZE	(8 * 1024 * 1024)
 
@@ -98,19 +98,22 @@ static void boot(void)
 	// Jump to SDRAM_LOAD_BASE
 	((void (*)(void))(SDRAM_LOAD_BASE))();
 }
+#endif
 
 int main()
 {
-	pll_init();
+	cgu_pll_init();
 	gpio_init();
+
 	uart_init();
-	uart_puts("\r\n*** nandboot start np");
-	uart_puthex((_header.variant_h << 8) | _header.variant_l, 4);
+	uart_puts("\r\n*** usbboot JZ");
+	uart_puthex(fw_args->cpu_id, 4);
 	uart_puts(" ***\r\n");
-	pll_switch();
+
 	sdram_init();
-	nand_init();
+#if 0
 	lcd_init();
+	nand_init();
 
 	uart_puts("Ready.\r\n");
 	nand_print_id();
@@ -146,5 +149,6 @@ int main()
 	}
 
 	wdt_reset();
+#endif
 	return 0;
 }
