@@ -1,6 +1,5 @@
 #include "io.h"
 #include "lcd.h"
-#include "cgu.h"
 #include "gpio.h"
 #include "config.h"
 
@@ -107,8 +106,6 @@ static int desc_idx = 0;
 
 void lcd_init(void)
 {
-	cgu_clk_enable(CGU_CLKGR_LCD);
-
 	lcd->LCDCTRL = 0;
 	lcd->LCDCFG = (0 << 31) | (1 << 23) | (1 << 22) | (1 << 21) |
 		      (1 << 20) | (0 << 19) | (0 << 18) | (0 << 17) |
@@ -163,5 +160,5 @@ void lcd_init(void)
 
 	// Enable LCD controller
 	lcd->LCDCTRL |= 1 << 3;
-	gpio_lcd_enable(1);
+	//gpio_lcd_enable(1);
 }

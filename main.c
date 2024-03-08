@@ -4,6 +4,7 @@
 #include "gpio.h"
 #include "uart.h"
 #include "sdram.h"
+#include "i2c.h"
 #include "lcd.h"
 #if 0
 #include "wdt.h"
@@ -100,6 +101,32 @@ static void boot(void)
 }
 #endif
 
+static void i2c_scan()
+{
+	uart_puts("I2C scan:\r\n");
+
+	uart_puts("--");
+	for (uint8_t col = 0; col < 0x10; col += 1) {
+		uart_puts(" ");
+		uart_puthex(col, 2);
+	}
+	uart_puts("\r\n");
+
+	for (uint8_t row = 0; row < 0x80; row += 0x10) {
+		uart_puthex(row, 2);
+		for (uint8_t col = 0; col < 0x10; col += 1) {
+			uint8_t addr = row | col;
+			int ack = !i2c_probe(addr);
+			uart_puts(" ");
+			if (ack)
+				uart_puthex(addr, 2);
+			else
+				uart_puts("--");
+		}
+		uart_puts("\r\n");
+	}
+}
+
 int main()
 {
 	cgu_pll_init();
@@ -111,8 +138,11 @@ int main()
 	uart_puts(" ***\r\n");
 
 	sdram_init();
-#if 0
+	i2c_init();
 	lcd_init();
+
+	i2c_scan();
+#if 0
 	nand_init();
 
 	uart_puts("Ready.\r\n");

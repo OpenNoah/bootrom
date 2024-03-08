@@ -56,13 +56,14 @@ static gpio_t * const gpd = GPIOD_BASE;
 
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
-#define GPIOD_FUN   0b00000000000000111111111111111111      // Function  - 0: GPIO/INT,    1: AF0/AF1
-#define GPIOD_SEL   0b00000000000000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
+#define GPIOD_FUN   0b00001111111111111111111111111111      // Function  - 0: GPIO/INT,    1: AF0/AF1
+#define GPIOD_SEL   0b00000011110000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
 #define GPIOD_DIR   0b00000000000000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
 #define GPIOD_DAT   0b00000000000000000000000000000000      // Output data
-#define GPIOD_PE    0b00000000000000111111111111111111      // Pull-up/down
-//      Check         xxxx??????????------------------
+#define GPIOD_PE    0b00001111111111111111111111111111      // Pull-up/down
+//      Check         xxxx!!!!!!!!!!------------------
 
+#if 1
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
 #define GPIOE_FUN   0b00000010100000000011000000000000      // Function  - 0: GPIO/INT,    1: AF0/AF1
@@ -70,7 +71,12 @@ static gpio_t * const gpd = GPIOD_BASE;
 #define GPIOE_DIR   0b00000000000000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
 #define GPIOE_DAT   0b00000000000000000000000000000000      // Output data
 #define GPIOE_PE    0b01000010000000000000000000000000      // Pull-up/down
-//      Check         ?-xxxx-x-?xx??xxxx--????????????
+//      Check         ?-xxxx-x-?xx??xxxx--???????-???-
+// PE0: Lid detect
+// PE4: MMC card detect
+// PE12: I2C SDA
+// PE13: I2C SCK
+#endif
 
 #endif
 

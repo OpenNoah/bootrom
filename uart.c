@@ -42,17 +42,13 @@ static struct hw_uart_t * const uart = UART1_BASE;
 
 void uart_init(void)
 {
-#if JZ4755
-	cgu_clk_enable(CGU_CLKGR_UART1);
-#endif
-
 	// Disable UART
 	uart->UFCR = 0;
 	// DLAB = 1, 8-bit
 	uart->ULCR = 0b10000011;
 
 	// Baud rate calculations
-	if (cgu_uart_clk_rate() == MHZ(12) && BAUDRATE == 115200) {
+	if (cgu_ex_clk_rate() == MHZ(12) && BAUDRATE == 115200) {
 		uart->UMR = 17;
 		uart->UACR = 594;
 		uart->UDLLR = 6;
