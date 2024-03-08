@@ -24,6 +24,8 @@ static gpio_t * const gpa = GPIOA_BASE;
 static gpio_t * const gpb = GPIOB_BASE;
 static gpio_t * const gpc = GPIOC_BASE;
 static gpio_t * const gpd = GPIOD_BASE;
+static gpio_t * const gpe = GPIOE_BASE;
+static gpio_t * const gpf = GPIOF_BASE;
 
 #if VARIANT == VARIANT_D88
 
@@ -61,9 +63,8 @@ static gpio_t * const gpd = GPIOD_BASE;
 #define GPIOD_DIR   0b00000000000000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
 #define GPIOD_DAT   0b00000000000000000000000000000000      // Output data
 #define GPIOD_PE    0b00001111111111111111111111111111      // Pull-up/down
-//      Check         xxxx!!!!!!!!!!------------------
+//      Check         xxxx!!!!!!----------------------
 
-#if 1
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
 #define GPIOE_FUN   0b00000010100000000011000000000000      // Function  - 0: GPIO/INT,    1: AF0/AF1
@@ -76,7 +77,16 @@ static gpio_t * const gpd = GPIOD_BASE;
 // PE4: MMC card detect
 // PE12: I2C SDA
 // PE13: I2C SCK
-#endif
+
+//      GPIO           3         2         1         0
+//      GPIO          10987654321098765432109876543210
+#define GPIOF_FUN   0b00000000000000000000000000000000      // Function  - 0: GPIO/INT,    1: AF0/AF1
+#define GPIOF_SEL   0b00000000000000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
+#define GPIOF_DIR   0b00000000000000000001000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
+#define GPIOF_DAT   0b00000000000000000000000000000000      // Output data
+#define GPIOF_PE    0b00000000000000000000000000000000      // Pull-up/down
+//      Check         xxxxxxxxxxxxxxxxxxx-??xxxxxxxxxx
+// PF12: LCD enable
 
 #endif
 
@@ -103,6 +113,27 @@ void gpio_init(void)
     GPIO_CONFIG(C);
     GPIO_CONFIG(D);
     GPIO_CONFIG(E);
+    GPIO_CONFIG(F);
+}
+
+void gpio_lcd_enable(int en)
+{
+#if VARIANT == VARIANT_D88
+    if (en)
+        gpf->DAT.S = BIT(12);
+    else
+        gpf->DAT.C = BIT(12);
+#else
+    if (en) {
+#if LCD_PD_PWM != 0
+        gpd->DAT.S = LCD_PD_PWM;
+#endif
+    } else {
+#if LCD_PD_PWM != 0
+        gpd->DAT.C = LCD_PD_PWM;
+#endif
+    }
+#endif
 }
 
 #if 0
@@ -212,16 +243,4 @@ void gpio_nand_busy_wait(void)
     while (!(gpc->FLG.D & GPIOC_PINS_NAND_BUSY));
 }
 
-void gpio_lcd_enable(int en)
-{
-    if (en) {
-#if LCD_PD_PWM != 0
-        gpd->DAT.S = LCD_PD_PWM;
-#endif
-    } else {
-#if LCD_PD_PWM != 0
-        gpd->DAT.C = LCD_PD_PWM;
-#endif
-    }
-}
 #endif

@@ -31,7 +31,7 @@
 #define JZ4755	1
 #define SDRAM_A3V56S40ETP_G6
 #define NAND_K9GAG08U0M
-#define LCD_AT043TN24
+#define LCD_LMS430HF15
 #else
 #error Unknown board variant
 #endif
@@ -209,7 +209,20 @@ static const struct config_t config = {
         .vtotal = 272 + 2 + 10 + 2,
         .flags = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
         .bus_format = MEDIA_BUS_FMT_RGB666_1X18,
-        .bus_flags = DRM_BUS_FLAG_DE_HIGH | DRM_BUS_FLAG_PIXDATA_DRIVE_POSEDGE,
+        .bus_flags = DRM_BUS_FLAG_DE_HIGH,
+#elif defined(LCD_LMS430HF15)
+        .clock = 9200,
+        .hdisplay = 480,
+        .hsync_start = 480 + 8,
+        .hsync_end = 480 + 8 + 41,
+        .htotal = 480 + 8 + 41 + 45,
+        .vdisplay = 272,
+        .vsync_start = 272 + 2,
+        .vsync_end = 272 + 2 + 1,
+        .vtotal = 272 + 2 + 1 + 11,
+        .flags = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
+        .bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+        .bus_flags = DRM_BUS_FLAG_DE_HIGH,
 #endif
     },
 };
