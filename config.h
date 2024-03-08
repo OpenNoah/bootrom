@@ -160,7 +160,7 @@ static const struct config_t config = {
         .cas = 3,
         .burst = 0,
         .btype = 0,
-        .blen = 0b010,	// burst length 4
+        .blen = 0b011,	// burst length 8
 
         .tref = 64 * 1000 * 1000 * 10 / 8192,
         .trc = 600,

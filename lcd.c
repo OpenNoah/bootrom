@@ -97,6 +97,12 @@ struct lcd_desc_t {
     uint32_t sa;
     uint32_t fid;
     uint32_t cmd;
+#if JZ4755
+    uint32_t offs;
+    uint32_t pw;
+    uint32_t cnum;
+    uint32_t dessize;
+#endif
 };
 
 static _IO struct lcd_desc_t *desc[2];
@@ -106,18 +112,37 @@ static int desc_idx = 0;
 
 void lcd_init(void)
 {
-    lcd->LCDCTRL = 0;
-    lcd->LCDCFG = (0 << 31) | (1 << 23) | (1 << 22) | (1 << 21) |
-              (1 << 20) | (0 << 19) | (0 << 18) | (0 << 17) |
+    unsigned lcd_fmt = 0;
+    if (config.lcd.bus_format == MEDIA_BUS_FMT_RGB565_1X16)
+        lcd_fmt = 0;            // 16-bit TFT panel
+    else if (config.lcd.bus_format == MEDIA_BUS_FMT_RGB666_1X18)
+        lcd_fmt = BIT(7) | 0;   // 18-bit TFT panel
+#if 0   // TODO Why 24-bit mode does not work???
+    else if (config.lcd.bus_format == MEDIA_BUS_FMT_RGB888_1X24)
+        lcd_fmt = BIT(6) | 0;   // 24-bit TFT panel
+#else
+    else if (config.lcd.bus_format == MEDIA_BUS_FMT_RGB888_1X24)
+        lcd_fmt = BIT(7) | 0;   // Use it as 18-bit TFT panel for now
+#endif
+    else if (config.lcd.bus_format == MEDIA_BUS_FMT_RGB888_3X8)
+        lcd_fmt = 0b1100;       // 8-bit serial TFT panel
+
+    // Disable LCD controller
+    lcd->LCDCTRL = BIT(4);
+    while (lcd->LCDCTRL & BIT(3));
+    // Configure LCD controller
+    lcd->LCDCFG = (0 << 31) |
+              //BIT(23) | BIT(22) | BIT(21) | BIT(20) |
+              (0 << 19) | (0 << 18) | (0 << 17) |
               (0 << 16) | (0 << 15) | (0 << 14) | (0 << 13) |
               (0 << 12) |
+#if JZ4755
+              BIT(28) |     // 8-word new descriptor
+#endif
               (!!(config.lcd.flags & DRM_MODE_FLAG_NHSYNC) << 11) |
               (!!(config.lcd.bus_flags & DRM_BUS_FLAG_PIXDATA_DRIVE_NEGEDGE) << 10) |
               (!!(config.lcd.bus_flags & DRM_BUS_FLAG_DE_LOW) << 9) |
-              (!!(config.lcd.flags & DRM_MODE_FLAG_NVSYNC) << 8) |
-              (((config.lcd.bus_format == MEDIA_BUS_FMT_RGB666_1X18) ||
-                  (config.lcd.bus_format == MEDIA_BUS_FMT_RGB888_1X24)) << 7) |
-              (config.lcd.bus_format == MEDIA_BUS_FMT_RGB888_3X8 ? 0b1100 : 0);
+              (!!(config.lcd.flags & DRM_MODE_FLAG_NVSYNC) << 8) | lcd_fmt;
     lcd->LCDVSYNC = config.lcd.vsync_end - config.lcd.vsync_start;
     lcd->LCDHSYNC = config.lcd.hsync_end - config.lcd.hsync_start;
     lcd->LCDVAT = (config.lcd.htotal << 16) | config.lcd.vtotal;
@@ -125,15 +150,15 @@ void lcd_init(void)
               (config.lcd.htotal - (config.lcd.hsync_start - config.lcd.hdisplay));
     lcd->LCDDAV = ((config.lcd.vtotal - config.lcd.vsync_start) << 16) |
               (config.lcd.vtotal - (config.lcd.vsync_start - config.lcd.vdisplay));
-    lcd->LCDCTRL = (0b10 << 28) | (0 << 27) | (1 << 26) | (0b101);
-    while (lcd->LCDCTRL & (1 << 3));
+    lcd->LCDCTRL = (0b10 << 28) | (0 << 27) | (1 << 26) | 0b101;
 
     // LCD buffers
     static const unsigned align = 16 * 4;
     static const unsigned bpp = 4;
-    uint32_t bufs = kseg0_to_kseg1((void *)(((uint32_t)alloc(align +
-        2 * config.lcd.vdisplay * config.lcd.hdisplay * bpp +
-        sizeof(struct lcd_desc_t) * 2) + align) & ~(align - 1)));
+    uint32_t bufs = kseg0_to_kseg1(alloc(
+        2 * (config.lcd.vdisplay * config.lcd.hdisplay * bpp +
+             sizeof(struct lcd_desc_t)) + align));
+    bufs += (align - (bufs % align)) % align;
     buf[0] = (void *)bufs;
     bufs += config.lcd.vdisplay * config.lcd.hdisplay * bpp;
     buf[1] = (void *)bufs;
@@ -148,8 +173,14 @@ void lcd_init(void)
     desc[0]->sa = kseg1_to_pa((void *)buf[0]);
     desc[0]->fid = 0;
     desc[0]->cmd = (config.lcd.vdisplay * config.lcd.hdisplay * bpp) / 4;
+#if JZ4755
+    desc[0]->offs = 0;
+    desc[0]->pw = 0;
+    desc[0]->cnum = 0;
+    desc[0]->dessize = 0;
+#endif
     lcd->LCDDA0 = kseg1_to_pa((void *)desc[0]);
-    lcd->LCDDA1 = kseg1_to_pa((void *)desc[1]);
+    lcd->LCDDA1 = kseg1_to_pa((void *)desc[0]);
 
     // Test pattern
     for (unsigned y = 0; y < config.lcd.vdisplay; y++)
@@ -182,6 +213,7 @@ void lcd_init(void)
     }
 
     // Enable LCD controller
+    lcd->LCDSTATE = 0;
     lcd->LCDCTRL |= 1 << 3;
 
     gpio_lcd_enable(1);

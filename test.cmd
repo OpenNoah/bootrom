@@ -42,3 +42,8 @@ mdw 0xf400000c
 #verify 0x20000000 /home/zhiyb/tmp/test.bin
 #read 0x20000000 0x04000000 /run/d88_check.bin
 #cpu
+
+echo LCD state
+mdw 0xb3050000
+mdw 0xb3050030
+mdw 0xb3050034

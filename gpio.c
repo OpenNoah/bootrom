@@ -36,7 +36,6 @@ static gpio_t * const gpf = GPIOF_BASE;
 #define GPIOA_DIR   0b00000000000000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
 #define GPIOA_DAT   0b00000000000000000000000000000000      // Output data
 #define GPIOA_PE    0b11111111111111111111111111111111      // Pull-up/down
-//      Check         --------------------------------
 
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
@@ -45,7 +44,6 @@ static gpio_t * const gpf = GPIOF_BASE;
 #define GPIOB_DIR   0b00000000000000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
 #define GPIOB_DAT   0b00000000000000000000000000000000      // Output data
 #define GPIOB_PE    0b11111111111111111111111111111111      // Pull-up/down
-//      Check         --------------------------------
 
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
@@ -56,6 +54,16 @@ static gpio_t * const gpf = GPIOF_BASE;
 #define GPIOC_PE    0b00110000001000110000000000000000      // Pull-up/down
 //      Check         -x---xx??x-xxx--xxxxxxxxxxxxxxxx
 
+#if 1
+//      GPIO           3         2         1         0
+//      GPIO          10987654321098765432109876543210
+#define GPIOD_FUN   0b00000000001111111111111111111111      // Function  - 0: GPIO/INT,    1: AF0/AF1
+#define GPIOD_SEL   0b00000000000000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
+#define GPIOD_DIR   0b00001111110000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
+#define GPIOD_DAT   0b00000000000000000000000000000000      // Output data
+#define GPIOD_PE    0b00001111111111111111111111111111      // Pull-up/down
+//      Check         xxxx!!!!!!----------------------
+#else
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
 #define GPIOD_FUN   0b00001111111111111111111111111111      // Function  - 0: GPIO/INT,    1: AF0/AF1
@@ -64,6 +72,7 @@ static gpio_t * const gpf = GPIOF_BASE;
 #define GPIOD_DAT   0b00000000000000000000000000000000      // Output data
 #define GPIOD_PE    0b00001111111111111111111111111111      // Pull-up/down
 //      Check         xxxx!!!!!!----------------------
+#endif
 
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
