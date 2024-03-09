@@ -1,7 +1,7 @@
 /* Specify the memory areas */
 MEMORY
 {
-  /* 16KiB of SRAM is available, but USB boot is typically loaded at 0x80002000 */
+  /* 16KiB of SRAM is available, but USB boot stage1 is typically loaded at 0x80002000 */
   RAM(xrw):   ORIGIN = 0x80000000, LENGTH = 0x2000
   LOAD(xrw):  ORIGIN = 0x80002000, LENGTH = 0x2000
 }
@@ -83,7 +83,7 @@ SECTIONS
 
     . = ALIGN(4);
     __data_end__ = .;
-  } >LOAD AT>LOAD
+  } >LOAD
 
   /* Uninitialized data section */
   . = ALIGN(4);

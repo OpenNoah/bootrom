@@ -68,7 +68,7 @@ void nand_print_id(void)
     *NAND_CMD_PORT(bank0) = 0x90;
     *NAND_ADDR_PORT(bank0) = 0x00;
 
-    uart_puts("NAND bank0 id: 0x");
+    uart_puts("NAND bank0 id: ");
     for (int i = 0; i < 6; i++) {
         uint8_t id = *NAND_DATA_PORT_8(bank0);
         uart_puthex(id, 2);
