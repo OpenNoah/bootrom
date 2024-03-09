@@ -6,9 +6,10 @@
 #include "sdram.h"
 #include "i2c.h"
 #include "lcd.h"
+#include "nand.h"
+#include "cp0.h"
 #if 0
 #include "wdt.h"
-#include "nand.h"
 #include "keypad.h"
 
 #define BUFFER_SIZE	(8 * 1024 * 1024)
@@ -127,6 +128,24 @@ static void i2c_scan()
 	}
 }
 
+void print_arch()
+{
+	uart_puts("Processor ID: 0x");
+	uart_puthex(cp0_prid(), 8);
+	uart_puts("\r\n");
+
+	uint32_t configs[6];
+	cp0_configs(configs);
+
+	for (int i = 0; i < 6; i++) {
+		uart_puts("CP0 Config ");
+		uart_puthex(i, 1);
+		uart_puts(": 0x");
+		uart_puthex(configs[i], 8);
+		uart_puts("\r\n");
+	}
+}
+
 int main()
 {
 	cgu_pll_init();
@@ -136,14 +155,18 @@ int main()
 	uart_puts("\r\n*** usbboot JZ");
 	uart_puthex(fw_args->cpu_id, 4);
 	uart_puts(" ***\r\n");
+	print_arch();
 
 	sdram_init();
-	i2c_init();
 	lcd_init();
 
+	i2c_init();
 	i2c_scan();
-#if 0
+
 	nand_init();
+	nand_print_id();
+
+#if 0
 
 	uart_puts("Ready.\r\n");
 	nand_print_id();

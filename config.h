@@ -30,7 +30,7 @@
 #elif VARIANT == VARIANT_D88
 #define JZ4755	1
 #define SDRAM_A3V56S40ETP_G6
-#define NAND_K9GAG08U0M
+#define NAND_K9LBG08U0D
 #define LCD_LMS430HF15
 #else
 #error Unknown board variant
@@ -44,31 +44,31 @@
 #define JZ4755 0
 #endif
 
-#pragma packed(push, 1)
+#pragma pack(push, 1)
 typedef struct {
-	/* CPU ID */
-	unsigned int  cpu_id;
+    /* CPU ID */
+    unsigned int  cpu_id;
 
-	/* PLL args */
-	unsigned char ext_clk;
-	unsigned char cpu_speed;
-	unsigned char phm_div;
-	unsigned char use_uart;
-	unsigned int  baudrate;
+    /* PLL args */
+    unsigned char ext_clk;
+    unsigned char cpu_speed;
+    unsigned char phm_div;
+    unsigned char use_uart;
+    unsigned int  baudrate;
 
-	/* SDRAM args */
-	unsigned char bus_width;
-	unsigned char bank_num;
-	unsigned char row_addr;
-	unsigned char col_addr;
-	unsigned char is_mobile;
-	unsigned char is_busshare;
+    /* SDRAM args */
+    unsigned char bus_width;
+    unsigned char bank_num;
+    unsigned char row_addr;
+    unsigned char col_addr;
+    unsigned char is_mobile;
+    unsigned char is_busshare;
 
-	/* debug args */
-	unsigned char debug_ops;
-	unsigned char pin_num;
-	unsigned int  start;
-	unsigned int  size;
+    /* debug args */
+    unsigned char debug_ops;
+    unsigned char pin_num;
+    unsigned int  start;
+    unsigned int  size;
 } fw_args_t;
 
 extern char _header;
@@ -107,7 +107,7 @@ struct sdram_config_t {
 };
 
 struct nand_config_t {
-    unsigned bank;	// Chip select #
+    unsigned bank0;	// Chip select #
     unsigned block;	// Block size
     unsigned page;	// Page size
     unsigned oob;	// OOB bytes per page
@@ -172,15 +172,20 @@ static const struct config_t config = {
     },
     .nand = {
 #ifdef NAND_K9GAG08U0M
-        .bank = 1,
+        .bank0 = 1,
         .block = 512 * 1024,
         .page = 4 * 1024,
         .oob = 16 * 2 * 4,
 #elif defined(NAND_HY27UU08AG5M)
-        .bank = 1,
+        .bank0 = 1,
         .block = 256 * 1024,
         .page = 2 * 1024,
         .oob = 64,
+#elif defined(NAND_K9LBG08U0D)
+        .bank0 = 1,
+        .block = 512 * 1024,
+        .page = 4 * 1024,
+        .oob = 218,
 #endif
     },
     .lcd = {

@@ -6,7 +6,7 @@
 // Unit: 0.1ns
 #define T_TO_CLK(t)	DIV_CEIL((uint32_t)(t) * SDRAM_CLK_MHZ, 10000)
 
-#pragma packed(push, 1)
+#pragma pack(push, 1)
 static struct sdram_t {
 	_IO uint32_t DMCR;
 	_IO uint16_t RTCSR;

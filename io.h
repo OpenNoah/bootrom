@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include "helper.h"
+#include "config.h"
 
 #define _I	volatile
 #define _O	volatile
@@ -13,6 +14,9 @@
 #define SRAM_BASE	((void *)PA_TO_KSEG1(0x13010014))
 #define NAND_BASE	((void *)PA_TO_KSEG1(0x13010050))
 #define SDRAM_BASE	((void *)PA_TO_KSEG1(0x13010080))
+#if JZ4755
+#define BCH_BASE    ((void *)PA_TO_KSEG1(0x130d0000))
+#endif
 
 #define UART0_BASE	((void *)PA_TO_KSEG1(0x10030000))
 #define UART1_BASE	((void *)PA_TO_KSEG1(0x10031000))

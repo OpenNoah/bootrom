@@ -23,6 +23,11 @@ mdw 0xb000007c
 echo SDRAM dump
 mdw 0xb3010080
 
+echo NAND dump
+mdw 0xb3010000
+mdw 0xb3010014
+mdw 0xb3010018
+
 echo Stage 1 firmware
 sleep 1
 config /home/zhiyb/ingenic/usbboot/configs/dicple_d88.cfg

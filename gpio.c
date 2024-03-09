@@ -10,7 +10,7 @@
 #define GPIOE_BASE  ((gpio_t *)PA_TO_KSEG1(0x10010400))
 #define GPIOF_BASE  ((gpio_t *)PA_TO_KSEG1(0x10010500))
 
-#pragma packed(push, 1)
+#pragma pack(push, 1)
 typedef struct gpio_t {
     struct gpio_port_t {
         _I uint32_t D;
@@ -40,19 +40,19 @@ static gpio_t * const gpf = GPIOF_BASE;
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
 #define GPIOB_FUN   0b11111111111111111111111111111111      // Function  - 0: GPIO/INT,    1: AF0/AF1
-#define GPIOB_SEL   0b11111100000000001000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
+#define GPIOB_SEL   0b11111100000000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
 #define GPIOB_DIR   0b00000000000000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
 #define GPIOB_DAT   0b00000000000000000000000000000000      // Output data
 #define GPIOB_PE    0b11111111111111111111111111111111      // Pull-up/down
 
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
-#define GPIOC_FUN   0b00110000001000110000000000000000      // Function  - 0: GPIO/INT,    1: AF0/AF1
-#define GPIOC_SEL   0b00000000000000010000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
+#define GPIOC_FUN   0b00110000001000010000000000000000      // Function  - 0: GPIO/INT,    1: AF0/AF1
+#define GPIOC_SEL   0b00000000000000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
 #define GPIOC_DIR   0b00000000000000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
 #define GPIOC_DAT   0b00000000000000000000000000000000      // Output data
-#define GPIOC_PE    0b00110000001000110000000000000000      // Pull-up/down
-//      Check         -x---xx??x-xxx--xxxxxxxxxxxxxxxx
+#define GPIOC_PE    0b00110000001000010000000000000000      // Pull-up/down
+//      Check         -x---xx??x-xxx?-xxxxxxxxxxxxxxxx
 
 #if 1
 //      GPIO           3         2         1         0
@@ -142,6 +142,15 @@ void gpio_lcd_enable(int en)
         gpd->DAT.C = LCD_PD_PWM;
 #endif
     }
+#endif
+}
+
+int gpio_nand_rb(void)
+{
+#if JZ4740
+    return gpc->PIN.D & BIT(30);
+#elif JZ4755
+    return gpc->PIN.D & BIT(27);
 #endif
 }
 

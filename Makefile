@@ -1,7 +1,7 @@
 VARIANT	?= d88
 NAME	:= usbboot_$(VARIANT)
 
-SRC	:= main.c helper.c cgu.c gpio.c uart.c sdram.c lcd.c i2c.c #wdt.c keypad.c nand.c
+SRC	:= main.c helper.c cgu.c gpio.c uart.c sdram.c lcd.c i2c.c nand.c #wdt.c keypad.c
 SRC	+= startup.S
 
 OBJ	= $(patsubst %.S,%.o,$(SRC:%.c=%.o))
@@ -10,14 +10,15 @@ CROSS	?= mipsel-linux-
 AS	:= $(CROSS)gcc
 CC	:= $(CROSS)gcc
 CXX	:= $(CROSS)g++
-LD	:= $(CROSS)g++
+LD	:= $(CROSS)gcc
 NM	:= $(CROSS)nm
 SIZE	:= $(CROSS)size
 OBJCOPY	:= $(CROSS)objcopy
 
-ARGS	= -mips1 -g -Os -mno-abicalls -fno-pic -fno-pie -nostdlib -flto -ffreestanding
+ARGS	= -mips32 -g -Os -fno-pic -fno-pie -mno-abicalls -nostdlib -flto -ffreestanding
+ARGS	+= -Wall -Wextra -Wno-unused-variable -Wno-unused-const-variable
 DEFS	= -DVARIANT=VARIANT_$(shell echo '$(VARIANT)' | tr '[:lower:]' '[:upper:]')
-CFLAGS	= $(ARGS) $(DEFS)
+CFLAGS	= -std=gnu17 $(ARGS) $(DEFS)
 ASFLAGS	= $(ARGS) $(DEFS)
 LDFLAGS	= $(ARGS) -Xlinker --gc-sections
 

@@ -4,7 +4,7 @@
 #include "config.h"
 
 #if JZ4740
-#pragma packed(push, 1)
+#pragma pack(push, 1)
 typedef struct hw_lcd_t {
     _IO uint32_t LCDCFG;
     _IO uint32_t LCDVSYNC;
@@ -35,7 +35,7 @@ typedef struct hw_lcd_t {
     _I  uint32_t LCDCMD1;
 } hw_lcd_t;
 #elif JZ4755
-#pragma packed(push, 1)
+#pragma pack(push, 1)
 typedef struct hw_lcd_t {
     /* 0x0000 */ _IO uint32_t LCDCFG;
     /* 0x0004 */ _IO uint32_t LCDVSYNC;

@@ -6,7 +6,7 @@
 #define I2C_CLK_RATE    100000
 #define I2C_TIMEOUT
 
-#pragma packed(push, 1)
+#pragma pack(push, 1)
 struct i2c_t {
     _IO uint8_t  I2CDR;
         uint8_t  RESERVED_VAR[3];

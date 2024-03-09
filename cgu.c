@@ -3,7 +3,7 @@
 #include "cgu.h"
 
 #if JZ4740
-#pragma packed(push, 1)
+#pragma pack(push, 1)
 struct cgu_t {
     _IO uint32_t CPCCR;
     uint32_t _RESERVED0[3];
@@ -18,7 +18,7 @@ struct cgu_t {
 };
 
 #elif JZ4755
-#pragma packed(push, 1)
+#pragma pack(push, 1)
 struct cgu_t {
     /* 00 */ _IO uint32_t CPCCR;
     /* 04 */ _IO uint32_t LCR;
@@ -106,7 +106,7 @@ void cgu_pll_init(void)
     // Disable unused peripherals
     cgu->CLKGR |= CGU_CLKGR_MSC0 | CGU_CLKGR_TCU;
     // Enable all device peripherals
-    cgu->CLKGR &= ~(CGU_CLKGR_MSC1 | CGU_CLKGR_UART1 | CGU_CLKGR_LCD | CGU_CLKGR_I2C);
+    cgu->CLKGR &= ~(CGU_CLKGR_MSC1 | CGU_CLKGR_UART1 | CGU_CLKGR_LCD | CGU_CLKGR_I2C | CGU_CLKGR_BCH);
 #endif
 #endif
 }
