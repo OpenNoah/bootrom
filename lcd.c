@@ -1,3 +1,4 @@
+#include <string.h>
 #include "io.h"
 #include "lcd.h"
 #include "gpio.h"
@@ -253,4 +254,9 @@ void lcd_init(void)
     lcd->LCDCTRL |= 1 << 3;
 
     gpio_lcd_enable(1);
+}
+
+void lcd_show_bitmap(void *img)
+{
+    memcpy((void *)buf[0], img, config.lcd.vdisplay * config.lcd.hdisplay * 4);
 }

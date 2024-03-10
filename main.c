@@ -180,9 +180,18 @@ int main()
 		return 0;
 	}
 
-	uart_puts("\r\n*** usbboot function JZ");
-	uart_puthex(fw_args->cpu_id, 4);
+	uart_puts("\r\n*** usbboot function 0x");
+	uint32_t op  = ((volatile uint32_t *)fw_args)[0];
+	uint32_t arg = ((volatile uint32_t *)fw_args)[1];
+	uart_puthex(op, 8);
+	uart_puts(", 0x");
+	uart_puthex(arg, 8);
 	uart_puts(" ***\r\n");
+
+	if (op == 1) {
+		// Show image
+		lcd_show_bitmap((void *)arg);
+	}
 
 #if 0
 
