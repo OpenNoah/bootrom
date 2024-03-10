@@ -3,7 +3,6 @@
 #include "cgu.h"
 #include "gpio.h"
 #include "uart.h"
-#include "sdram.h"
 #include "i2c.h"
 #include "lcd.h"
 #include "nand.h"
@@ -160,16 +159,12 @@ int main()
 	if (first_boot) {
 		first_boot = 0;
 
-		cgu_pll_init();
-		gpio_init();
-
 		uart_init();
-		uart_puts("\r\n*** usbboot JZ");
+		uart_puts("\r\n*** usbboot stage2 JZ");
 		uart_puthex(fw_args->cpu_id, 4);
 		uart_puts(" ***\r\n");
 		print_arch();
 
-		sdram_init();
 		lcd_init();
 
 		i2c_init();
@@ -180,7 +175,7 @@ int main()
 		return 0;
 	}
 
-	uart_puts("\r\n*** usbboot function 0x");
+	uart_puts("\r\n*** usbboot stage2 function 0x");
 	uint32_t op  = ((volatile uint32_t *)fw_args)[0];
 	uint32_t arg = ((volatile uint32_t *)fw_args)[1];
 	uart_puthex(op, 8);

@@ -106,10 +106,9 @@ struct lcd_desc_t {
 #endif
 };
 
-static _IO struct lcd_desc_t *desc[2];
-static _IO uint32_t *buf[2];
-
-static int desc_idx = 0;
+static uint32_t desc_idx = 0;
+static struct lcd_desc_t *desc[2];
+static uint32_t *buf[2];
 
 static void test_pattern_frame(_IO uint32_t *buf)
 {
@@ -165,6 +164,7 @@ static void test_pattern_rgb_block(_IO  uint32_t *buf)
     test_pattern_frame(buf);
 }
 
+#if STAGE == 1
 void lcd_init(void)
 {
     unsigned lcd_fmt = 0;
@@ -231,32 +231,99 @@ void lcd_init(void)
     desc[1] = (void *)bufs;
     bufs += sizeof(struct lcd_desc_t);
 
-    // LCD buffer descriptor
-    desc[0]->da = kseg1_to_pa((void *)desc[0]);
-    desc[0]->sa = kseg1_to_pa((void *)buf[0]);
-    desc[0]->fid = 0;
-    desc[0]->cmd = (config.lcd.vdisplay * config.lcd.hdisplay * bpp) / 4;
+    // LCD buffer descriptors
+    for (int i = 0; i < 2; i++) {
+        desc[i]->da = kseg1_to_pa((void *)desc[i]);
+        desc[i]->sa = kseg1_to_pa((void *)buf[i]);
+        desc[i]->fid = i;
+        desc[i]->cmd = (config.lcd.vdisplay * config.lcd.hdisplay * bpp) / 4;
 #if JZ4755
-    desc[0]->offs = 0;
-    desc[0]->pw = 0;
-    desc[0]->cnum = 0;
-    desc[0]->dessize = (config.lcd.vdisplay << 16) | config.lcd.hdisplay;
+        desc[i]->offs = 0;
+        desc[i]->pw = 0;
+        desc[i]->cnum = 0;
+        desc[i]->dessize = (config.lcd.vdisplay << 16) | config.lcd.hdisplay;
 #endif
-    lcd->LCDDA0 = kseg1_to_pa((void *)desc[0]);
-    lcd->LCDDA1 = kseg1_to_pa((void *)desc[0]);
+    }
 
     // Test pattern
-    test_pattern_rgb_banding(buf[0]);
-    //test_pattern_rgb_block(buf[0]);
+    test_pattern_rgb_block(buf[0]);
 
+    // Connect to descriptors
+    lcd->LCDDA0 = kseg1_to_pa((void *)desc[0]);
+    lcd->LCDDA1 = kseg1_to_pa((void *)desc[0]);
     // Enable LCD controller
     lcd->LCDSTATE = 0;
     lcd->LCDCTRL |= 1 << 3;
 
     gpio_lcd_enable(1);
+
+    // Next free descriptor
+    desc_idx = !desc_idx;
+}
+#else
+void lcd_init(void)
+{
+    // At stage2, LCD has already been initialised
+    // Just need to update the descriptors
+    // stage2 allocations should be at different space to stage1 allocations
+
+    // LCD buffers
+    static const unsigned align = 16 * 4;
+    static const unsigned bpp = 4;
+    uint32_t bufs = kseg0_to_kseg1(alloc(
+        2 * (config.lcd.vdisplay * config.lcd.hdisplay * bpp +
+             sizeof(struct lcd_desc_t)) + align));
+    bufs += (align - (bufs % align)) % align;
+    buf[0] = (void *)bufs;
+    bufs += config.lcd.vdisplay * config.lcd.hdisplay * bpp;
+    buf[1] = (void *)bufs;
+    bufs += config.lcd.vdisplay * config.lcd.hdisplay * bpp;
+    desc[0] = (void *)bufs;
+    bufs += sizeof(struct lcd_desc_t);
+    desc[1] = (void *)bufs;
+    bufs += sizeof(struct lcd_desc_t);
+
+    // LCD buffer descriptors
+    for (int i = 0; i < 2; i++) {
+        desc[i]->da = kseg1_to_pa((void *)desc[i]);
+        desc[i]->sa = kseg1_to_pa((void *)buf[i]);
+        desc[i]->fid = i;
+        desc[i]->cmd = (config.lcd.vdisplay * config.lcd.hdisplay * bpp) / 4;
+#if JZ4755
+        desc[i]->offs = 0;
+        desc[i]->pw = 0;
+        desc[i]->cnum = 0;
+        desc[i]->dessize = (config.lcd.vdisplay << 16) | config.lcd.hdisplay;
+#endif
+    }
+
+    // Test pattern
+    test_pattern_rgb_banding(buf[0]);
+
+    // Insert into descriptor chain
+    struct lcd_desc_t *pdesc = (struct lcd_desc_t *)PA_TO_KSEG1(lcd->LCDDA0);
+    pdesc->da = kseg1_to_pa((void *)desc[0]);
+    while (lcd->LCDFID0 != 0);
+
+    // Next free descriptor
+    desc_idx = !desc_idx;
+}
+#endif
+
+static void lcd_buffer_swap()
+{
+    desc[desc_idx]->da     = kseg1_to_pa((void *)desc[desc_idx]);
+    desc[1 - desc_idx]->da = kseg1_to_pa((void *)desc[desc_idx]);
+    // Wait for buffer swap
+    while (lcd->LCDFID0 != desc_idx);
+    desc_idx = !desc_idx;
 }
 
 void lcd_show_bitmap(void *img)
 {
-    memcpy((void *)buf[0], img, config.lcd.vdisplay * config.lcd.hdisplay * 4);
+    uint32_t *src = img;
+    uint32_t *dst = buf[desc_idx];
+    for (unsigned a = 0; a < config.lcd.vdisplay * config.lcd.hdisplay; a++)
+        dst[a] = src[a];
+    lcd_buffer_swap();
 }

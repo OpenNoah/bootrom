@@ -33,17 +33,26 @@ sleep 1
 config /home/zhiyb/ingenic/usbboot/configs/dicple_d88.cfg
 #stage1 /home/zhiyb/ingenic/usbboot_stage1.bin
 stage1 /tmp/usbboot_d88_stage1.bin
-sleep 1
 cpu
 
-echo Test image bitmap
-image /tmp/test.png
-
-echo Firmware outputs
+echo Firmware stage 1 debug
 mdw 0xf4000000
 mdw 0xf4000004
 mdw 0xf4000008
 mdw 0xf400000c
+
+# Stage2, but load using stage1 type
+stage1 0x80100000 /tmp/usbboot_d88_stage2.bin
+cpu
+
+echo Firmware stage 2 debug
+mdw 0xf4000000
+mdw 0xf4000004
+mdw 0xf4000008
+mdw 0xf400000c
+
+echo Test image bitmap
+image /tmp/test.png
 
 #echo SDRAM test
 #write 0x20000000 /home/zhiyb/tmp/test.bin

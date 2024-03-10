@@ -27,7 +27,8 @@ _entry:
     la      $9, __bss_end__
 _bss:
     beq     $8, $9, _bss_done
-    addi    $8, $8, 4       # delay slot
+    nop                     # delay slot
+    addi    $8, $8, 4
 
     sw      $0, -4($8)
     j       _bss

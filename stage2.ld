@@ -1,10 +1,10 @@
 /* Specify the memory areas */
 MEMORY
 {
-  /* 16KiB of SRAM is available, but USB boot stage1 is typically loaded at 0x80002000 */
-  RAM(xrw):   ORIGIN = 0x80002000, LENGTH = 0x2000
-  /* SDRAM space for dynamic allocation, skip first 16k used by cache */
-  ALLOC(xrw): ORIGIN = 0x80004000, LENGTH = 0x4000000 - 0x4000
+  /* 3MiB at start of SDRAM space + 1MiB offset */
+  RAM(xrw):   ORIGIN = 0x80100000, LENGTH = 0x00400000 - 0x00100000
+  /* Next ~4MiB space for dynamic allocation */
+  ALLOC(xrw): ORIGIN = ORIGIN(RAM) + LENGTH(RAM), LENGTH = 0x81000000 - ORIGIN(ALLOC)
 }
 
 /* Stack starts from the end of available RAMs */
