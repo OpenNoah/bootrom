@@ -49,21 +49,13 @@ static gpio_t * const gpf = GPIOF_BASE;
 //      GPIO          10987654321098765432109876543210
 #define GPIOC_FUN   0b00110000001000010000000000000000      // Function  - 0: GPIO/INT,    1: AF0/AF1
 #define GPIOC_SEL   0b00000000000000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
-#define GPIOC_DIR   0b00000000000000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
-#define GPIOC_DAT   0b00000000000000000000000000000000      // Output data
-#define GPIOC_PE    0b00110000001000010000000000000000      // Pull-up/down
-//      Check         -x---xx??x-xxx?-xxxxxxxxxxxxxxxx
+#define GPIOC_DIR   0b00000000100000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
+#define GPIOC_DAT   0b00000000100000000000000000000000      // Output data
+#define GPIOC_PE    0b00110000101000010000000000000000      // Pull-up/down
+//      Check         -x---xx?-x-xxx?-xxxxxxxxxxxxxxxx
+// PC23: LCD DISP
+// PC24: LCD backlight control? likely not
 
-#if 1
-//      GPIO           3         2         1         0
-//      GPIO          10987654321098765432109876543210
-#define GPIOD_FUN   0b00000000001111111111111111111111      // Function  - 0: GPIO/INT,    1: AF0/AF1
-#define GPIOD_SEL   0b00000000000000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
-#define GPIOD_DIR   0b00001111110000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
-#define GPIOD_DAT   0b00000000000000000000000000000000      // Output data
-#define GPIOD_PE    0b00001111111111111111111111111111      // Pull-up/down
-//      Check         xxxx!!!!!!----------------------
-#else
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
 #define GPIOD_FUN   0b00001111111111111111111111111111      // Function  - 0: GPIO/INT,    1: AF0/AF1
@@ -71,19 +63,20 @@ static gpio_t * const gpf = GPIOF_BASE;
 #define GPIOD_DIR   0b00000000000000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
 #define GPIOD_DAT   0b00000000000000000000000000000000      // Output data
 #define GPIOD_PE    0b00001111111111111111111111111111      // Pull-up/down
-//      Check         xxxx!!!!!!----------------------
-#endif
+//      Check         xxxx----------------------------
 
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
 #define GPIOE_FUN   0b00000010100000000011000000000000      // Function  - 0: GPIO/INT,    1: AF0/AF1
 #define GPIOE_SEL   0b00000010100000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
-#define GPIOE_DIR   0b00000000000000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
-#define GPIOE_DAT   0b00000000000000000000000000000000      // Output data
-#define GPIOE_PE    0b01000010000000000000000000000000      // Pull-up/down
-//      Check         ?-xxxx-x-?xx??xxxx--???????-???-
+#define GPIOE_DIR   0b00000000000000000000000110000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
+#define GPIOE_DAT   0b00000000000000000000000110000000      // Output data
+#define GPIOE_PE    0b01000010000000000000000110000000      // Pull-up/down
+//      Check         ?-xxxx-x-?xx??xxxx--???--??-???-
 // PE0: Lid detect
 // PE4: MMC card detect
+// PE7: LCD PWR EN
+// PE8: Keyboard EN
 // PE12: I2C SDA
 // PE13: I2C SCK
 
@@ -93,9 +86,9 @@ static gpio_t * const gpf = GPIOF_BASE;
 #define GPIOF_SEL   0b00000000000000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
 #define GPIOF_DIR   0b00000000000000000001000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
 #define GPIOF_DAT   0b00000000000000000000000000000000      // Output data
-#define GPIOF_PE    0b00000000000000000000000000000000      // Pull-up/down
+#define GPIOF_PE    0b00000000000000000001000000000000      // Pull-up/down
 //      Check         xxxxxxxxxxxxxxxxxxx-??xxxxxxxxxx
-// PF12: LCD enable
+// PF12: LCD backlight
 
 #endif
 

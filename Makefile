@@ -16,7 +16,7 @@ SIZE	:= $(CROSS)size
 OBJCOPY	:= $(CROSS)objcopy
 
 ARGS	= -mips32 -g -Os -fno-pic -fno-pie -mno-abicalls -nostdlib -flto -ffreestanding
-ARGS	+= -Wall -Wextra -Wno-unused-variable -Wno-unused-const-variable
+ARGS	+= -Wall -Wextra -Wno-unused-variable -Wno-unused-const-variable -Wno-unused-function
 DEFS	= -DVARIANT=VARIANT_$(shell echo '$(VARIANT)' | tr '[:lower:]' '[:upper:]')
 CFLAGS	= -std=gnu17 $(ARGS) $(DEFS)
 ASFLAGS	= $(ARGS) $(DEFS)

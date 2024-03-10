@@ -52,3 +52,6 @@ echo LCD state
 mdw 0xb3050000
 mdw 0xb3050030
 mdw 0xb3050034
+mdw 0xb3050100
+mdw 0xb3050104
+mdw 0xb3050108

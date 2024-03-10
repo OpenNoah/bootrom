@@ -70,7 +70,7 @@ typedef struct hw_lcd_t {
     /* 0x007c */ _IO uint32_t LCDDESSIZE1;
                      uint32_t RESERVED_VAR[4];
     /* 0x0090 */ _IO uint32_t LCDRGBC;
-                     uint32_t RESERVED_VAR[3];
+                     uint32_t RESERVED_VAR[3 + 24];
     /* 0x0100 */ _IO uint16_t LCDOSDC;
                      uint16_t RESERVED_VAR[1];
     /* 0x0104 */ _IO uint16_t LCDOSDCTRL;
@@ -110,6 +110,60 @@ static _IO uint32_t *buf[2];
 
 static int desc_idx = 0;
 
+static void test_pattern_frame(_IO uint32_t *buf)
+{
+    for (unsigned y = 0; y < config.lcd.vdisplay; y++) {
+        buf[y * config.lcd.hdisplay + 0] =
+            (0x00 << 16) |
+            (0x00 <<  8) |
+            (0xff <<  0);
+        buf[y * config.lcd.hdisplay + config.lcd.hdisplay - 1] =
+            (0xff << 16) |
+            (0xff <<  8) |
+            (0x00 <<  0);
+    }
+    for (unsigned x = 0; x < config.lcd.hdisplay; x++) {
+        buf[0 * config.lcd.hdisplay + x] =
+            (0x00 << 16) |
+            (0xff <<  8) |
+            (0x00 <<  0);
+        buf[(config.lcd.vdisplay - 1) * config.lcd.hdisplay + x] =
+            (0xff << 16) |
+            (0x00 <<  8) |
+            (0xff <<  0);
+    }
+}
+
+static void test_pattern_rgb_banding(_IO uint32_t *buf)
+{
+    unsigned block = (config.lcd.vdisplay - 2) / 3;
+    unsigned y = 1;
+    for (; y < block + 1; y++)
+        for (unsigned x = 0; x < config.lcd.hdisplay; x++)
+            buf[y * config.lcd.hdisplay + x] =
+                ((x & 0xff) << 16);
+    for (; y < block * 2 + 1; y++)
+        for (unsigned x = 0; x < config.lcd.hdisplay; x++)
+            buf[y * config.lcd.hdisplay + x] =
+                ((x & 0xff) << 8);
+    for (; y < config.lcd.vdisplay; y++)
+        for (unsigned x = 0; x < config.lcd.hdisplay; x++)
+            buf[y * config.lcd.hdisplay + x] =
+                ((x & 0xff) << 0);
+    test_pattern_frame(buf);
+}
+
+static void test_pattern_rgb_block(_IO  uint32_t *buf)
+{
+    for (unsigned y = 0; y < config.lcd.vdisplay; y++)
+        for (unsigned x = 0; x < config.lcd.hdisplay; x++)
+            buf[y * config.lcd.hdisplay + x] =
+                ((~x & 0xff) << 16) |
+                (( y & 0xff) <<  8) |
+                (( x & 0xff) <<  0);
+    test_pattern_frame(buf);
+}
+
 void lcd_init(void)
 {
     unsigned lcd_fmt = 0;
@@ -117,13 +171,8 @@ void lcd_init(void)
         lcd_fmt = 0;            // 16-bit TFT panel
     else if (config.lcd.bus_format == MEDIA_BUS_FMT_RGB666_1X18)
         lcd_fmt = BIT(7) | 0;   // 18-bit TFT panel
-#if 0   // TODO Why 24-bit mode does not work???
     else if (config.lcd.bus_format == MEDIA_BUS_FMT_RGB888_1X24)
-        lcd_fmt = BIT(6) | 0;   // 24-bit TFT panel
-#else
-    else if (config.lcd.bus_format == MEDIA_BUS_FMT_RGB888_1X24)
-        lcd_fmt = BIT(7) | 0;   // Use it as 18-bit TFT panel for now
-#endif
+        lcd_fmt = BIT(6) | 0;   // 24-bit TFT panel, requires OSD mode
     else if (config.lcd.bus_format == MEDIA_BUS_FMT_RGB888_3X8)
         lcd_fmt = 0b1100;       // 8-bit serial TFT panel
 
@@ -132,7 +181,7 @@ void lcd_init(void)
     while (lcd->LCDCTRL & BIT(3));
     // Configure LCD controller
     lcd->LCDCFG = (0 << 31) |
-              //BIT(23) | BIT(22) | BIT(21) | BIT(20) |
+              BIT(23) | BIT(22) | BIT(21) | BIT(20) |
               (0 << 19) | (0 << 18) | (0 << 17) |
               (0 << 16) | (0 << 15) | (0 << 14) | (0 << 13) |
               (0 << 12) |
@@ -151,6 +200,19 @@ void lcd_init(void)
     lcd->LCDDAV = ((config.lcd.vtotal - config.lcd.vsync_start) << 16) |
               (config.lcd.vtotal - (config.lcd.vsync_start - config.lcd.vdisplay));
     lcd->LCDCTRL = (0b10 << 28) | (0 << 27) | (1 << 26) | 0b101;
+
+
+#if JZ4755
+    // LCD OSD mode
+    // Note: 24-bit mode only works properly using OSD mode
+    // IPU disable, 18/24-bpp (does not matter, foreground 1 not used)
+    lcd->LCDOSDCTRL = 0b101;
+    // Foreground position
+    lcd->LCDXYP0 = 0;
+    lcd->LCDSIZE0 = (config.lcd.vdisplay << 16) | config.lcd.hdisplay;
+    // Foreground 0 enable, OSD mode enable
+    lcd->LCDOSDC = BIT(3) | BIT(0);
+#endif
 
     // LCD buffers
     static const unsigned align = 16 * 4;
@@ -177,40 +239,14 @@ void lcd_init(void)
     desc[0]->offs = 0;
     desc[0]->pw = 0;
     desc[0]->cnum = 0;
-    desc[0]->dessize = 0;
+    desc[0]->dessize = (config.lcd.vdisplay << 16) | config.lcd.hdisplay;
 #endif
     lcd->LCDDA0 = kseg1_to_pa((void *)desc[0]);
     lcd->LCDDA1 = kseg1_to_pa((void *)desc[0]);
 
     // Test pattern
-    for (unsigned y = 0; y < config.lcd.vdisplay; y++)
-        for (unsigned x = 0; x < config.lcd.hdisplay; x++)
-            buf[0][y * config.lcd.hdisplay + x] =
-                ((~x & 0xff) << 16) |
-                (( y & 0xff) <<  8) |
-                (( x & 0xff) <<  0);
-
-    for (unsigned y = 0; y < config.lcd.vdisplay; y++) {
-        buf[0][y * config.lcd.hdisplay + 0] =
-            (0x00 << 16) |
-            (0x00 <<  8) |
-            (0xff <<  0);
-        buf[0][y * config.lcd.hdisplay + config.lcd.hdisplay - 1] =
-            (0xff << 16) |
-            (0xff <<  8) |
-            (0x00 <<  0);
-    }
-
-    for (unsigned x = 0; x < config.lcd.hdisplay; x++) {
-        buf[0][0 * config.lcd.hdisplay + x] =
-            (0x00 << 16) |
-            (0xff <<  8) |
-            (0x00 <<  0);
-        buf[0][(config.lcd.vdisplay - 1) * config.lcd.hdisplay + x] =
-            (0xff << 16) |
-            (0x00 <<  8) |
-            (0xff <<  0);
-    }
+    test_pattern_rgb_banding(buf[0]);
+    //test_pattern_rgb_block(buf[0]);
 
     // Enable LCD controller
     lcd->LCDSTATE = 0;
