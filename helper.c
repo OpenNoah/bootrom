@@ -27,8 +27,9 @@ const char *get_hex_u32(const char *s, uint32_t *pv)
 
 void *alloc(uint32_t size)
 {
-	static uint32_t ptr = 0x82000000; //(uint32_t)&__stack_end__;
-	void *p = (void *)ptr;
+	extern char __alloc_start__;
+	static void *ptr = &__alloc_start__;
+	void *p = ptr;
 	ptr += size;
 	return p;
 }
