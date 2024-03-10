@@ -67,3 +67,7 @@ mdw 0xb3050034
 mdw 0xb3050100
 mdw 0xb3050104
 mdw 0xb3050108
+
+echo Keypad test
+stmpe gpio_in
+stmpe test

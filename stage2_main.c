@@ -7,6 +7,9 @@
 #include "lcd.h"
 #include "nand.h"
 #include "cp0.h"
+#include "stmpe2403.h"
+#include "custom_cmds.h"
+#include "keyboard_test.h"
 #if 0
 #include "wdt.h"
 #include "keypad.h"
@@ -170,22 +173,46 @@ int main()
 		i2c_init();
 		i2c_scan();
 
+		stmpe2403_init();
+		uart_puts("STMPE2403 ID: 0x");
+		uart_puthex(stmpe2403_read_id(), 4);
+		uart_puts("\r\n");
+
 		nand_init();
 		nand_print_id();
 		return 0;
 	}
 
-	uart_puts("\r\n*** usbboot stage2 function 0x");
-	uint32_t op  = ((volatile uint32_t *)fw_args)[0];
+	uart_puts("*** usbboot stage2 function 0x");
+	custom_cmd_op_t op = ((volatile uint32_t *)fw_args)[0];
 	uint32_t arg = ((volatile uint32_t *)fw_args)[1];
 	uart_puthex(op, 8);
 	uart_puts(", 0x");
 	uart_puthex(arg, 8);
 	uart_puts(" ***\r\n");
 
-	if (op == 1) {
-		// Show image
+	switch (op) {
+	case CRNop:
+		break;
+	case CRShowImage:
 		lcd_show_bitmap((void *)arg);
+		break;
+	case CRStmpeGPIODir:
+		stmpe2403_gpio_dir(*(uint32_t *)arg);
+		break;
+	case CRStmpeGPIOOut:
+		stmpe2403_gpio_out(*(uint32_t *)arg);
+		// fall-through
+	case CRStmpeGPIOIn:
+		*(uint32_t *)arg = stmpe2403_gpio_in();
+		break;
+	case CRKeyboardTest:
+		keyboard_test();
+		break;
+	default:
+		uart_puts("Unknown operation: ");
+		uart_putdec(op);
+		uart_puts("\r\n");
 	}
 
 #if 0

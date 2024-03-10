@@ -1,8 +1,10 @@
 VARIANT	?= d88
 NAME	:= usbboot_$(VARIANT)
 
-SRC	:= helper.c cgu.c gpio.c uart.c sdram.c lcd.c i2c.c nand.c #wdt.c keypad.c
-SRC	+= startup.S
+SRC	:= helper.c startup.S
+SRC	+= gpio.c cgu.c sdram.c nand.c uart.c i2c.c lcd.c #wdt.c
+SRC	+= stmpe2403.c #keypad.c
+SRC	+= keyboard_test.c
 
 OBJ	= $(patsubst %.S,%.o,$(SRC:%.c=%.o))
 

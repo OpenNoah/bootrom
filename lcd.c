@@ -319,9 +319,9 @@ static void lcd_buffer_swap()
     desc_idx = !desc_idx;
 }
 
-void lcd_show_bitmap(void *img)
+void lcd_show_bitmap(const void *img)
 {
-    uint32_t *src = img;
+    const uint32_t *src = img;
     uint32_t *dst = buf[desc_idx];
     for (unsigned a = 0; a < config.lcd.vdisplay * config.lcd.hdisplay; a++)
         dst[a] = src[a];
