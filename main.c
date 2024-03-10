@@ -126,6 +126,14 @@ static void i2c_scan()
 		}
 		uart_puts("\r\n");
 	}
+
+#if VARIANT == VARIANT_D88
+	// D88 I2C devices:
+	// 0x10: AR1010 FM radio
+	// 0x1b: WM8731 audio codec
+	// 0x42: STMPE2403 keyboard controller
+	// 0x78: Reserved 10-bit addressing?
+#endif
 }
 
 void print_arch()
@@ -148,23 +156,33 @@ void print_arch()
 
 int main()
 {
-	cgu_pll_init();
-	gpio_init();
+	static int first_boot = 1;
+	if (first_boot) {
+		first_boot = 0;
 
-	uart_init();
-	uart_puts("\r\n*** usbboot JZ");
+		cgu_pll_init();
+		gpio_init();
+
+		uart_init();
+		uart_puts("\r\n*** usbboot JZ");
+		uart_puthex(fw_args->cpu_id, 4);
+		uart_puts(" ***\r\n");
+		print_arch();
+
+		sdram_init();
+		lcd_init();
+
+		i2c_init();
+		i2c_scan();
+
+		nand_init();
+		nand_print_id();
+		return 0;
+	}
+
+	uart_puts("\r\n*** usbboot function JZ");
 	uart_puthex(fw_args->cpu_id, 4);
 	uart_puts(" ***\r\n");
-	print_arch();
-
-	sdram_init();
-	lcd_init();
-
-	i2c_init();
-	i2c_scan();
-
-	nand_init();
-	nand_print_id();
 
 #if 0
 

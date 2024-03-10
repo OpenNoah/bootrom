@@ -36,6 +36,10 @@ stage1 /tmp/usbboot_d88_stage1.bin
 sleep 1
 cpu
 
+start1 0x80002000
+sleep 1
+cpu
+
 echo Firmware outputs
 mdw 0xf4000000
 mdw 0xf4000004
