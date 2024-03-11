@@ -6,3 +6,5 @@ upgrade*.bin
 .vscode*
 
 *.sh
+
+image_keyboard.h

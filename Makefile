@@ -59,3 +59,10 @@ stage1 stage2: %:
 .PHONY: clean
 clean:
 	rm -rf stage1 stage2
+
+# Special requirements
+
+keyboard_test.c: image_keyboard.h
+
+image_keyboard.h: image_to_header.py keyboard.png
+	./$^ $@
