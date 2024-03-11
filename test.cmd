@@ -42,7 +42,7 @@ mdw 0xf4000008
 mdw 0xf400000c
 
 # Stage2, but load using stage1 type
-stage1 0x80100000 /tmp/usbboot_d88_stage2.bin
+stage1 0x80200000 /tmp/usbboot_d88_stage2.bin
 cpu
 
 echo Firmware stage 2 debug

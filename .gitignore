@@ -8,3 +8,4 @@ upgrade*.bin
 *.sh
 
 image_keyboard.h
+image_keyboard_regions.h

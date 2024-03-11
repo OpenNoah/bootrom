@@ -62,7 +62,10 @@ clean:
 
 # Special requirements
 
-keyboard_test.c: image_keyboard.h
+stage2/keyboard_test.o: image_keyboard.h image_keyboard_regions.h
 
 image_keyboard.h: image_to_header.py keyboard.png
 	./$^ $@
+
+image_keyboard_regions.h: image_find_regions.py keyboard_regions.png
+	./$^ $@ -c 0x66ccff

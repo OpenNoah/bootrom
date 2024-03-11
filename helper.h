@@ -5,6 +5,8 @@
 #define _TOKENPASTE(x, y)	x ## y
 #define TOKENPASTE(x, y)	_TOKENPASTE(x, y)
 
+#define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
+
 #define MHZ(n)			((n) * 1000000)
 
 #define PA_TO_KSEG0(v)	(0x80000000 + (v))	// Unmapped, cachable

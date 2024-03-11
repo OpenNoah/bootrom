@@ -303,21 +303,12 @@ void lcd_init(void)
     // Insert into descriptor chain
     struct lcd_desc_t *pdesc = (struct lcd_desc_t *)PA_TO_KSEG1(lcd->LCDDA0);
     pdesc->da = kseg1_to_pa((void *)desc[0]);
-    while (lcd->LCDFID0 != 0);
+    while (lcd->LCDDA0 != pdesc->da);
 
     // Next free descriptor
     desc_idx = !desc_idx;
 }
 #endif
-
-static void lcd_buffer_swap()
-{
-    desc[desc_idx]->da     = kseg1_to_pa((void *)desc[desc_idx]);
-    desc[1 - desc_idx]->da = kseg1_to_pa((void *)desc[desc_idx]);
-    // Wait for buffer swap
-    while (lcd->LCDFID0 != desc_idx);
-    desc_idx = !desc_idx;
-}
 
 void lcd_show_bitmap(const void *img)
 {
@@ -325,5 +316,21 @@ void lcd_show_bitmap(const void *img)
     uint32_t *dst = buf[desc_idx];
     for (unsigned a = 0; a < config.lcd.vdisplay * config.lcd.hdisplay; a++)
         dst[a] = src[a];
-    lcd_buffer_swap();
+    lcd_swap_fb();
+}
+
+void *lcd_get_fb()
+{
+    // Get current pending frame buffer
+    return buf[desc_idx];
+}
+
+void lcd_swap_fb()
+{
+    // Swap pending frame buffer
+    desc[desc_idx]->da     = kseg1_to_pa((void *)desc[desc_idx]);
+    desc[1 - desc_idx]->da = kseg1_to_pa((void *)desc[desc_idx]);
+    // Wait for buffer swap
+    while (lcd->LCDFID0 != desc_idx);
+    desc_idx = !desc_idx;
 }
