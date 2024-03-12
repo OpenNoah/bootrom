@@ -17,6 +17,10 @@
 //      GPIO          321098765432109876543210
 #define GPIO_ROW    0b000000010111000000010000
 #define GPIO_COL    0b000111100000111110001111
+// Note: D88 has external pull-down connected to ROW IOs
+// P15 & P23 also used as I2C ADDR, connected to GND
+
+#define NUM_ROWS    24
 
 #pragma pack(push, 1)
 typedef struct {
@@ -35,6 +39,8 @@ typedef struct {
     /* 0xa5 */ uint8_t COMPAT2401;
 } stmpe2403_gpio_t;
 
+uint32_t row_state[NUM_ROWS];
+
 void stmpe2403_init()
 {
     // Enable GPIO and KPC
@@ -44,17 +50,17 @@ void stmpe2403_init()
     // Initialise GPIOs
     stmpe2403_gpio_t gpio = {0};
     // Set output values
-    gpio.GPSR[0]  = (GPIO_COL >> 16) & 0xff;
-    gpio.GPSR[1]  = (GPIO_COL >>  8) & 0xff;
-    gpio.GPSR[2]  = (GPIO_COL >>  0) & 0xff;
+    gpio.GPSR[0]  = ((GPIO_ROW | GPIO_COL) >> 16) & 0xff;
+    gpio.GPSR[1]  = ((GPIO_ROW | GPIO_COL) >>  8) & 0xff;
+    gpio.GPSR[2]  = ((GPIO_ROW | GPIO_COL) >>  0) & 0xff;
     // Set directions
     gpio.GPDR[0]  = (GPIO_COL >> 16) & 0xff;
     gpio.GPDR[1]  = (GPIO_COL >>  8) & 0xff;
     gpio.GPDR[2]  = (GPIO_COL >>  0) & 0xff;
     // Set pull-downs
-    gpio.GPPDR[0] = (GPIO_ROW >> 16) & 0xff;
-    gpio.GPPDR[1] = (GPIO_ROW >>  8) & 0xff;
-    gpio.GPPDR[2] = (GPIO_ROW >>  0) & 0xff;
+    gpio.GPPDR[0] = ((GPIO_ROW | GPIO_COL) >> 16) & 0xff;
+    gpio.GPPDR[1] = ((GPIO_ROW | GPIO_COL) >>  8) & 0xff;
+    gpio.GPPDR[2] = ((GPIO_ROW | GPIO_COL) >>  0) & 0xff;
     i2c_write(I2C_ADDR, REG_GPIO_GPSR, (const uint8_t *)&gpio, 0xa6 - 0x83);
 }
 
@@ -91,4 +97,37 @@ void stmpe2403_gpio_dir(uint32_t v)
     buf[1] = v >>  8;
     buf[2] = v >>  0;
     i2c_write(I2C_ADDR, REG_GPIO_GPDR, buf, 3);
+}
+
+const uint32_t *stmpe2403_read_state()
+{
+    // Matrix scan algorithm
+    // Reset to clear
+    for (int i = 0; i < NUM_ROWS; i++)
+        row_state[i] = 0;
+
+    // Check active rows
+    // Set row IO to pull-down
+    // Set col IO to output high
+    stmpe2403_gpio_dir(GPIO_COL);
+    // Read row IO status
+    uint32_t row = stmpe2403_gpio_in() & GPIO_ROW;
+    if (!row)   // No key pressed
+        return row_state;
+
+    // Scan matrix
+    for (uint32_t bit = 0; row; bit++) {
+        // Find an active row IO
+        if ((row & BIT(bit)) == 0)
+            continue;
+        row &= ~BIT(bit);
+        // Set only active row scan IO to output high
+        // Set col IO to pull-down
+        stmpe2403_gpio_dir(BIT(bit));
+        // Read col IO status
+        uint32_t col = stmpe2403_gpio_in() & GPIO_COL;
+        row_state[bit] = col;
+    }
+
+    return &row_state[0];
 }

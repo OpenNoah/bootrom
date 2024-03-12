@@ -158,7 +158,7 @@ void print_arch()
 
 int main()
 {
-	static int first_boot = 1;
+	static volatile int first_boot = 1;
 	if (first_boot) {
 		first_boot = 0;
 

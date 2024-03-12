@@ -29,8 +29,9 @@ _bss:
     beq     $8, $9, _bss_done
     nop                     # delay slot
     sw      $0, ($8)
+    addi    $8, $8, 4
     j       _bss
-    addi    $8, $8, 4       # delay slot
+    nop                     # delay slot
 
 _bss_done:
     # No need to copy .data
