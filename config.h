@@ -78,8 +78,8 @@ static const fw_args_t *fw_args = (fw_args_t *)(&_header + 8);
 #define EXT_CLK_RATE	MHZ(fw_args->ext_clk)
 #define SYS_CLK_MHZ	    (EXT_CLK_MHZ * fw_args->cpu_speed)
 #define SYS_CLK_RATE	MHZ(SYS_CLK_MHZ)
-#define SDRAM_CLK_MHZ	(SYS_CLK_MHZ / 3)   // Max. 133MHz
-#define SDRAM_CLK_RATE	MHZ(SDRAM_CLK_MHZ)
+#define MEM_CLK_MHZ	    (SYS_CLK_MHZ / 3)   // Max. 133MHz
+#define MEM_CLK_RATE    (SDRAM_CLK_MHZ)
 #define LCD_CLK_RATE	(SYS_CLK_RATE / 3)	// Max. 150MHz
 #define MMC_CLK_RATE	MHZ(24)			// Max. 25MHz
 #define BAUDRATE	    (fw_args->baudrate)
@@ -111,6 +111,15 @@ struct nand_config_t {
     unsigned block;	// Block size
     unsigned page;	// Page size
     unsigned oob;	// OOB bytes per page
+
+    unsigned bw;    // 0/1/2: Bus width 8/16/32-bit
+
+    // Timing, unit: 1ns
+    unsigned tstrv; // tRHW/tWHR, between read to write
+    unsigned taw;   // tREA/tREH, read strobe RD# to data wait time
+    unsigned tbp;   // tWP/tWH, write strobe WE#/WEn# wait time
+    unsigned tah;   // tCH, RD#/WR# negation to addr CSn# negation, addr/write hold time
+    unsigned tas;   // tCS/tRR, addr CSn# to read/write strobe
 };
 
 struct lcd_config_t {
@@ -186,6 +195,12 @@ static const struct config_t config = {
         .block = 512 * 1024,
         .page = 4 * 1024,
         .oob = 218,
+        .bw = 0,
+        .tstrv = 100,
+        .taw = 20,
+        .tbp = 15,
+        .tah = 5,
+        .tas = 20,
 #endif
     },
     .lcd = {

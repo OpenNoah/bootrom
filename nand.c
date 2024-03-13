@@ -4,6 +4,9 @@
 #include "gpio.h"
 #include "io.h"
 
+// Unit: 1ns
+#define T_TO_CLK(t)	        DIV_CEIL((uint32_t)(t) * MEM_CLK_MHZ, 1000)
+
 #define EMC_SMCR(n)         ((_IO uint32_t *)(SRAM_BASE + ((n) - 1) * 4))
 
 #define NAND_BANK_BASE(n)   ((n) == 1 ? PA_TO_KSEG1(0x18000000) : \
@@ -50,9 +53,15 @@ static inline void nand_fce_restore(const unsigned bank)
 
 void nand_init(void)
 {
-    // TODO: NAND timing
     const unsigned bank0 = config.nand.bank0;
-    *EMC_SMCR(bank0) = 0x0d453400;
+    unsigned strv = T_TO_CLK(config.nand.tstrv);
+    unsigned taw  = T_TO_CLK(config.nand.taw);
+    unsigned tbp  = T_TO_CLK(config.nand.tbp);
+    unsigned tah  = T_TO_CLK(config.nand.tah);
+    unsigned tas  = T_TO_CLK(config.nand.tas);
+    unsigned smcr = (strv << 24) | (taw << 20) | (tbp << 16) |
+                    (tah << 12) | (tas << 8) | (config.nand.bw << 6);
+    *EMC_SMCR(bank0) = smcr;
     nand_fce_restore(bank0);
     // Reset and wait
     *NAND_CMD_PORT(bank0) = 0xff;

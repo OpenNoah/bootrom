@@ -4,7 +4,7 @@
 #include "sdram.h"
 
 // Unit: 0.1ns
-#define T_TO_CLK(t)	DIV_CEIL((uint32_t)(t) * SDRAM_CLK_MHZ, 10000)
+#define T_TO_CLK(t)	DIV_CEIL((uint32_t)(t) * MEM_CLK_MHZ, 10000)
 
 #pragma pack(push, 1)
 static struct sdram_t {
