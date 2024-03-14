@@ -71,4 +71,10 @@ mdw 0xb3050108
 
 echo Keypad test
 stmpe gpio_in
-stmpe test
+#stmpe test
+
+echo NAND test
+#nand dump_page 0 1
+nand dump_page_oob 0 1
+#nand read_page_oob 0 0x100000 /tmp/nand_oob.bin
+cpu

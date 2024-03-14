@@ -209,6 +209,14 @@ int main()
 	case CRKeyboardTest:
 		keyboard_test();
 		break;
+	case CRNandReadPage:
+	case CRNandReadPageOob: {
+			uint32_t dst   = arg;
+			uint32_t start = ((uint32_t *)arg)[0];
+			uint32_t count = ((uint32_t *)arg)[1];
+			nand_read_pages((void *)dst, start, count, op == CRNandReadPageOob);
+		}
+		break;
 	default:
 		uart_puts("Unknown operation: ");
 		uart_putdec(op);

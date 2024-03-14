@@ -48,7 +48,7 @@ static gpio_t * const gpf = GPIOF_BASE;
 //      GPIO           3         2         1         0
 //      GPIO          10987654321098765432109876543210
 #define GPIOC_FUN   0b00110000001000010000000000000000      // Function  - 0: GPIO/INT,    1: AF0/AF1
-#define GPIOC_SEL   0b00000000000000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
+#define GPIOC_SEL   0b00001000000000000000000000000000      // Select    - 0: GPIO/AF0,    1: INT/AF1
 #define GPIOC_DIR   0b00000000100000000000000000000000      // Direction - 0: IN/LOW/FALL, 1: OUT/HIGH/RISE
 #define GPIOC_DAT   0b00000000100000000000000000000000      // Output data
 #define GPIOC_PE    0b00110000101000010000000000000000      // Pull-up/down
@@ -102,6 +102,9 @@ static gpio_t * const gpf = GPIOF_BASE;
 //      Check         xxxxxxxxxxxxxxxxxxx-??xxxxxxxxxx
 // PF12: LCD backlight
 
+// NAND busy: Input, level trigger
+#define GPIOC_PINS_NAND_BUSY    27
+
 #endif
 
 #define GPIO_CONFIG(port)                       \
@@ -128,6 +131,9 @@ void gpio_init(void)
     GPIO_CONFIG(D);
     GPIO_CONFIG(E);
     GPIO_CONFIG(F);
+
+    // Level trigger for NAND busy pin
+    gpc->TRG.C = BIT(GPIOC_PINS_NAND_BUSY);
 }
 
 void gpio_lcd_enable(int en)
@@ -152,11 +158,25 @@ void gpio_lcd_enable(int en)
 
 int gpio_nand_rb(void)
 {
-#if JZ4740
-    return gpc->PIN.D & BIT(30);
-#elif JZ4755
-    return gpc->PIN.D & BIT(27);
-#endif
+    return gpc->PIN.D & BIT(GPIOC_PINS_NAND_BUSY);
+}
+
+void gpio_nand_busy_catch(void)
+{
+    // Low level trigger
+    gpc->DIR.C = BIT(GPIOC_PINS_NAND_BUSY);
+    gpc->FLG.C = BIT(GPIOC_PINS_NAND_BUSY);
+}
+
+void gpio_nand_busy_wait(void)
+{
+    // Wait for low level
+    while (!(gpc->FLG.D & BIT(GPIOC_PINS_NAND_BUSY)));
+    // High level trigger
+    gpc->DIR.S = BIT(GPIOC_PINS_NAND_BUSY);
+    gpc->FLG.C = BIT(GPIOC_PINS_NAND_BUSY);
+    // Wait for high level
+    while (!(gpc->FLG.D & BIT(GPIOC_PINS_NAND_BUSY)));
 }
 
 #if 0

@@ -64,16 +64,14 @@ void nand_init(void)
     *EMC_SMCR(bank0) = smcr;
     nand_fce_restore(bank0);
     // Reset and wait
+    gpio_nand_busy_catch();
     *NAND_CMD_PORT(bank0) = 0xff;
-    for (int i = 0; i < SYS_CLK_MHZ * 1; i++)
-        asm ("nop");
-    while (!gpio_nand_rb());
+    gpio_nand_busy_wait();
 }
 
 void nand_print_id(void)
 {
     const unsigned bank0 = config.nand.bank0;
-    //nand_fce_assert(bank0);
     *NAND_CMD_PORT(bank0) = 0x90;
     *NAND_ADDR_PORT(bank0) = 0x00;
 
@@ -83,113 +81,41 @@ void nand_print_id(void)
         uart_puthex(id, 2);
     }
     uart_puts("\r\n");
-    //nand_fce_restore(bank0);
 }
 
-#if 0
-void nand_dump(void *buf, uint32_t addr, uint32_t len)
+void nand_read_pages(void *dst, uint32_t start, uint32_t count, int oob)
 {
+    uart_puts(__func__);
+    uart_puts(": 0x");
+    uart_puthex(start, 8);
+    uart_puts(" + 0x");
+    uart_puthex(count, 8);
+    uart_puts("\r\n");
+
     const unsigned bank = config.nand.bank0;
-    const unsigned page = config.nand.page + config.nand.oob;
-    addr = addr & ~(16 - 1);
-    addr = addr * page / config.nand.page;
-    len = len & ~(4 - 1);
-    len = len * page / config.nand.page;
-    uint32_t *buf32 = buf;
-    uint32_t a = addr, v = len;
-    while (v) {
-        uint32_t col = a % page;
-        uint32_t row = a / page;
-        //nand_fce_assert();
-        gpio_nand_busy_catch();
-        *NAND_CMD_PORT(bank) = 0x00;
-        *NAND_ADDR_PORT(bank) = col & 0xff;
-        *NAND_ADDR_PORT(bank) = (col >> 8) & 0xff;
-        *NAND_ADDR_PORT(bank) = row & 0xff;
-        *NAND_ADDR_PORT(bank) = (row >> 8) & 0xff;
-        *NAND_ADDR_PORT(bank) = (row >> 16) & 0xff;
-        *NAND_CMD_PORT(bank) = 0x30;
-        uint32_t s = ((a + page) & ~(page - 1)) - a;
-        s = s >= v ? v : s;
-        a += s;
-        v -= s;
-        gpio_nand_busy_wait();
-        for (unsigned i = 0; i < s / 4; i++)
-            buf32[i] = *NAND_DATA_PORT_32(bank);
-        //nand_fce_restore();
-        buf32 += s / 4;
-    }
-
-    uint8_t *buf8 = buf;
-    uint8_t prev[16] = {~buf8[0]};
-    uint8_t pnt = 0;
-    a = addr;
-    for (v = 0; v < len; v += 16) {
-        unsigned i;
-        for (i = 0; i < 16; i++)
-            if (prev[i] != buf8[v + i])
-                break;
-        if (i == 16) {
-            if (!pnt) {
-                pnt = 1;
-                uart_puts("*\r\n");
-            }
-            a += 16;
-            continue;
-        }
-        for (i = 0; i < 16; i++)
-            prev[i] = buf8[v + i];
-        pnt = 0;
-
-        uint32_t col = a % page;
-        uint32_t row = a / page;
-        uint32_t pa = row * config.nand.page;
-        if (col < config.nand.page) {
-            uart_puthex(pa + col, 8);
-            uart_puts("   :");
-        } else {
-            uart_puthex(pa, 8);
-            uart_putc('+');
-            uart_puthex(col - config.nand.page, 2);
-            uart_putc(':');
-        }
-        a += 16;
-        for (i = 0; i < 16; i++) {
-            uart_putc(' ');
-            if (i == 8)
-                uart_putc(' ');
-            uart_puthex(buf8[v + i], 2);
-        }
-        uart_puts("\r\n");
-    }
-}
-
-void nand_load(uint32_t addr, void *dst, uint32_t len)
-{
-    const unsigned bank = config.nand.bank0;
-    const unsigned page = config.nand.page;
     uint32_t *buf32 = dst;
-    uint32_t a = addr, v = len;
-    while (v) {
-        uint32_t col = a % page;
-        uint32_t row = a / page;
-        //nand_fce_assert();
+    while (count--) {
         gpio_nand_busy_catch();
         *NAND_CMD_PORT(bank) = 0x00;
-        *NAND_ADDR_PORT(bank) = col & 0xff;
-        *NAND_ADDR_PORT(bank) = (col >> 8) & 0xff;
-        *NAND_ADDR_PORT(bank) = row & 0xff;
-        *NAND_ADDR_PORT(bank) = (row >> 8) & 0xff;
-        *NAND_ADDR_PORT(bank) = (row >> 16) & 0xff;
+        *NAND_ADDR_PORT(bank) = (0 >> 0) & 0xff;
+        *NAND_ADDR_PORT(bank) = (0 >> 8) & 0xff;
+        *NAND_ADDR_PORT(bank) = (start >> 0) & 0xff;
+        *NAND_ADDR_PORT(bank) = (start >> 8) & 0xff;
+        *NAND_ADDR_PORT(bank) = (start >> 16) & 0xff;
         *NAND_CMD_PORT(bank) = 0x30;
-        uint32_t s = page;
-        a += s;
-        v = v >= s ? v - s : 0;
         gpio_nand_busy_wait();
-        for (unsigned i = 0; i < s / 4; i++)
-            buf32[i] = *NAND_DATA_PORT_32(bank);
-        //nand_fce_restore();
-        buf32 += s / 4;
+        for (unsigned i = 0; i < config.nand.page / 4; i++)
+            *buf32++ = *NAND_DATA_PORT_32(bank);
+        if (oob) {
+            for (unsigned i = 0; i < config.nand.oob / 4; i++)
+                *buf32++ = *NAND_DATA_PORT_32(bank);
+            if (config.nand.oob % 4) {
+                // Unaligned OOB size
+                uint8_t *p = (uint8_t *)buf32;
+                for (unsigned i = 0; i < config.nand.oob % 4; i++)
+                    p[i] = *NAND_DATA_PORT_8(bank);
+                buf32++;
+            }
+        }
     }
 }
-#endif
