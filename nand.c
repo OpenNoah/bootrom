@@ -99,8 +99,8 @@ void nand_read_pages(void *dst, uint32_t start, uint32_t count, int oob)
         *NAND_CMD_PORT(bank) = 0x00;
         *NAND_ADDR_PORT(bank) = (0 >> 0) & 0xff;
         *NAND_ADDR_PORT(bank) = (0 >> 8) & 0xff;
-        *NAND_ADDR_PORT(bank) = (start >> 0) & 0xff;
-        *NAND_ADDR_PORT(bank) = (start >> 8) & 0xff;
+        *NAND_ADDR_PORT(bank) = (start >>  0) & 0xff;
+        *NAND_ADDR_PORT(bank) = (start >>  8) & 0xff;
         *NAND_ADDR_PORT(bank) = (start >> 16) & 0xff;
         *NAND_CMD_PORT(bank) = 0x30;
         gpio_nand_busy_wait();
@@ -117,5 +117,6 @@ void nand_read_pages(void *dst, uint32_t start, uint32_t count, int oob)
                 buf32++;
             }
         }
+        start++;
     }
 }

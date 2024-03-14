@@ -73,6 +73,7 @@ typedef struct {
 
 extern char _header;
 static const fw_args_t *fw_args = (fw_args_t *)(&_header + 8);
+static volatile uint32_t *cr_args = (volatile uint32_t *)(&_header + 16);
 
 #define EXT_CLK_MHZ	    (fw_args->ext_clk)
 #define EXT_CLK_RATE	MHZ(fw_args->ext_clk)

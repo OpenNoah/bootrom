@@ -184,8 +184,8 @@ int main()
 	}
 
 	uart_puts("*** usbboot stage2 function 0x");
-	custom_cmd_op_t op = ((volatile uint32_t *)fw_args)[0];
-	uint32_t arg = ((volatile uint32_t *)fw_args)[1];
+	custom_cmd_op_t op = cr_args[0];
+	uint32_t arg = cr_args[1];
 	uart_puthex(op, 8);
 	uart_puts(", 0x");
 	uart_puthex(arg, 8);

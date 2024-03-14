@@ -9,7 +9,24 @@
 _header:
     b	_entry
     nop
-    # Reserve 8 words for args
+    # Reserve some spaces for args
+    .word	0
+    .word	0
+    .word	0
+    .word	0
+    .word	0
+    .word	0
+    .word	0
+    # fw_args starts at offset 8
+    .word	0
+    .word	0
+    .word	0
+    .word	0
+    .word	0
+    .word	0
+    .word	0
+    .word	0
+    # custom command args starts at offset 16
     .word	0
     .word	0
     .word	0
