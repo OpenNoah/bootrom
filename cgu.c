@@ -105,7 +105,7 @@ void cgu_pll_init(void)
 #if VARIANT == VARIANT_D88
     // Disable unused peripherals
     cgu->CLKGR |= CGU_CLKGR_MSC0 | CGU_CLKGR_TCU;
-    // Enable all device peripherals
+    // Enable necessary peripherals
     cgu->CLKGR &= ~(CGU_CLKGR_MSC1 | CGU_CLKGR_UART1 | CGU_CLKGR_LCD | CGU_CLKGR_I2C | CGU_CLKGR_BCH);
 #endif
 #endif

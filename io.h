@@ -4,9 +4,9 @@
 #include "helper.h"
 #include "config.h"
 
-#define _I	volatile
-#define _O	volatile
-#define _IO	volatile
+#define _I	volatile    // Read-only
+#define _O	volatile    // Write-only
+#define _IO	volatile    // Read-write
 
 #define CGU_BASE	((void *)PA_TO_KSEG1(0x10000000))
 #define LCD_BASE	((void *)PA_TO_KSEG1(0x13050000))

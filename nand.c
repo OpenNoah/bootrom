@@ -39,6 +39,23 @@ static struct nand_t {
 #endif
 } * const nand = NAND_BASE;
 
+#if JZ4755
+static struct bch_t {
+    _I  uint32_t BHCR;
+    _O  uint32_t BHCSR;
+    _O  uint32_t BHCCR;
+    _IO uint32_t BHCNT;
+    _IO uint8_t  BHDR;
+        uint8_t  RESERVED_VAR[3];
+    _IO uint32_t BHPAR[4];
+    _I  uint32_t BHINT;
+    _I  uint32_t BHERR[4];
+    _IO uint32_t BHINTE;
+    _O  uint32_t BHINTES;
+    _O  uint32_t BHINTEC;
+} * const bch = BCH_BASE;
+#endif
+
 static inline void nand_fce_assert(const unsigned bank)
 {
     uint32_t mask = 0x03 << (2 * (bank - 1));
@@ -104,19 +121,114 @@ void nand_read_pages(void *dst, uint32_t start, uint32_t count, int oob)
         *NAND_ADDR_PORT(bank) = (start >> 16) & 0xff;
         *NAND_CMD_PORT(bank) = 0x30;
         gpio_nand_busy_wait();
+
+        uint32_t page_data[config.nand.page / 4];
         for (unsigned i = 0; i < config.nand.page / 4; i++)
-            *buf32++ = *NAND_DATA_PORT_32(bank);
-        if (oob) {
-            for (unsigned i = 0; i < config.nand.oob / 4; i++)
-                *buf32++ = *NAND_DATA_PORT_32(bank);
-            if (config.nand.oob % 4) {
-                // Unaligned OOB size
-                uint8_t *p = (uint8_t *)buf32;
-                for (unsigned i = 0; i < config.nand.oob % 4; i++)
-                    p[i] = *NAND_DATA_PORT_8(bank);
-                buf32++;
-            }
+            page_data[i] = *NAND_DATA_PORT_32(bank);
+
+        uint32_t oob_data[(config.nand.oob + 3) / 4];
+        for (unsigned i = 0; i < config.nand.oob / 4; i++)
+            oob_data[i] = *NAND_DATA_PORT_32(bank);
+        if (config.nand.oob % 4) {
+            // Unaligned OOB size
+            oob_data[config.nand.oob / 4] = 0xffffffff;
+            uint8_t *p = (uint8_t *)&oob_data[config.nand.oob / 4];
+            for (unsigned i = 0; i < config.nand.oob % 4; i++)
+                p[i] = *NAND_DATA_PORT_8(bank);
         }
+
+        uint32_t ecc_ofs = start <= 3 ? 3 : 24;
+        for (unsigned block = 0; block < config.nand.page / 512; block++) {
+            // BCH ECC decoding sequence
+            // 1 Set BHCR.BCHE to 1 to enable BCH controller.
+            // 2 Select 4-bit or 8-bit correction by setting BHCR.BSEL.
+            // 3 Clear BHCR.ENCE to 0 to enable decoding.
+            bch->BHCCR = BIT(3);
+            // 4 Set BHCR.BRST to 1 to reset BCH controller.
+            bch->BHCSR = BIT(2) | BIT(1) | BIT(0);
+            // 5 Set BHCNT.DEC_COUNT to data block size in bytes.
+            bch->BHCNT = (512 + 13) << 16;
+            // Clear error flags
+            bch->BHINT = 0xff;
+            // 6 Byte-write all data block to BHDR.
+            for (unsigned i = 0; i < 512; i++)
+                bch->BHDR = ((uint8_t *)&page_data[0])[block * 512 + i];
+            for (unsigned i = 0; i < 13; i++)
+                bch->BHDR = ((uint8_t *)&oob_data[0])[ecc_ofs + block * 13 + i];
+            // 7 Check BHINTS.DECF bit or by enabling decoding finish interrupt.
+            while (!(bch->BHINT & BIT(3)));
+            // 8 When decoding finishes, read out the status in BHINT and error report in BHERRn.
+            uint32_t status = bch->BHINT;
+            if (status & BIT(0)) {
+                // Error occured
+#if 1
+                uart_puts("BCH ECC status: 0x");
+                uart_puthex(bch->BHINT, 8);
+                uart_puts(", 0x");
+                uart_puthex(bch->BHERR[0], 8);
+                uart_puts(", 0x");
+                uart_puthex(bch->BHERR[1], 8);
+                uart_puts(", 0x");
+                uart_puthex(bch->BHERR[2], 8);
+                uart_puts(", 0x");
+                uart_puthex(bch->BHERR[3], 8);
+                uart_puts("\r\n");
+#endif
+                uart_puts("BCH ECC error @ page 0x");
+                uart_puthex(start, 8);
+                uart_puts(" block ");
+                uart_puthex(block, 1);
+                uart_puts(": ");
+                if (status & BIT(1)) {
+                    // Uncorrectable error occured
+                    uart_puts("Uncorrectable\r\n");
+                } else {
+                    uint32_t err_bits = status >> 28;
+                    uart_puthex(err_bits, 1);
+                    uart_puts(" errors corrected\r\n");
+                    while (err_bits--) {
+                        uint16_t bit = (bch->BHERR[err_bits / 2] >> (16 * (err_bits % 2))) - 1;
+                        ((uint8_t *)&page_data[0])[bit / 8] ^= 1 << (bit % 8);
+                    }
+                }
+            }
+
+#if 0
+            // BCH ECC encoding sequence
+            // 1 Set BHCR.BCHE to 1 to enable BCH controller.
+            // 2 Select 4-bit or 8-bit correction by setting BHCR.BSEL.
+            // 3 Set BHCR.ENCE to 1 to enable encoding.
+            // 4 Set BHCR.BRST to 1 to reset BCH controller.
+            bch->BHCSR = BIT(3) | BIT(2) | BIT(1) | BIT(0);
+            // 5 Set BHCNT.ENC_COUNT to data block size in bytes.
+            bch->BHCNT = 512;
+            // Clear error flags
+            bch->BHINT = 0xff;
+            // 6 Byte-write all data block to BHDR.
+            for (unsigned i = 0; i < 512; i++)
+                bch->BHDR = ((uint8_t *)&page_data[0])[block * 512 + i];
+            // 7 Check BHINTS.ENCF bit or by enabling encoding finish interrupt.
+            while (!(bch->BHINT & BIT(2)));
+            // 8 When encoding finishes, read out the parity data in BHPARn.
+            uart_puts("BCH ECC encoding: 0x");
+            uart_puthex(bch->BHINT, 8);
+            uart_puts(", 0x");
+            uart_puthex(bch->BHPAR[0], 8);
+            uart_puts(", 0x");
+            uart_puthex(bch->BHPAR[1], 8);
+            uart_puts(", 0x");
+            uart_puthex(bch->BHPAR[2], 8);
+            uart_puts(", 0x");
+            uart_puthex(bch->BHPAR[3], 8);
+            uart_puts("\r\n");
+#endif
+        }
+
+        for (unsigned i = 0; i < config.nand.page / 4; i++)
+            *buf32++ = page_data[i];
+        if (oob)
+            for (unsigned i = 0; i < (config.nand.oob + 3) / 4; i++)
+                *buf32++ = oob_data[i];
         start++;
     }
 }
