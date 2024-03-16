@@ -74,7 +74,12 @@ stmpe gpio_in
 #stmpe test
 
 echo NAND test
-#nand dump_page 0 1
 nand dump_page_oob 0 1
-#nand read_page_oob 0 0x100000 /tmp/nand_oob.bin
+
+#nand read_page_oob 0 0x100000 /ram/nand_oob.bin
+#nand read_page_oob 0x00000 0x40000 /ram/nand_oob_0.bin
+#nand read_page_oob 0x40000 0x40000 /ram/nand_oob_1.bin
+#nand read_page_oob 0x80000 0x40000 /ram/nand_oob_2.bin
+#nand read_page_oob 0xc0000 0x40000 /ram/nand_oob_3.bin
+
 cpu
