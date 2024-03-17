@@ -92,10 +92,6 @@ void cgu_pll_init(void)
     cgu->CPCCR = (1 << 30) | ((udiv - 1) << 23) | (1 << 22) | (1 << 21) |
                  ((h1div - 1) << 16) | ((mdiv - 1) << 12) | ((pdiv - 1) << 8) |
                  ((h0div - 1) << 4) | ((cdiv - 1) << 0);
-    // LCD clock
-    cgu->LPCDR = DIV_CEIL(SYS_CLK_RATE / 1000,
-                          ((config.lcd.bus_format == MEDIA_BUS_FMT_RGB888_3X8) ? 3 : 1) *
-                          config.lcd.clock) - 1;
 
     // Wait for PLL stable
     while (!(cgu->CPPCR & (1 << 10)));

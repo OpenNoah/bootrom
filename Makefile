@@ -1,14 +1,11 @@
-VARIANT	?= d88
-NAME	:= usbboot_$(VARIANT)
+NAME	:= bootrom
 
 SRC	:= helper.c startup.S
-SRC	+= gpio.c cgu.c sdram.c nand.c uart.c i2c.c lcd.c #wdt.c
-SRC	+= stmpe2403.c #keypad.c
-SRC	+= keyboard_test.c
+SRC	+= gpio.c cgu.c uart.c #nand.c
 
 OBJ	= $(patsubst %.S,%.o,$(SRC:%.c=%.o))
 
-CROSS	?= mipsel-linux-
+CROSS	?= mipsel-none-elf-
 AS	:= $(CROSS)gcc
 CC	:= $(CROSS)gcc
 CXX	:= $(CROSS)g++
@@ -17,55 +14,37 @@ NM	:= $(CROSS)nm
 SIZE	:= $(CROSS)size
 OBJCOPY	:= $(CROSS)objcopy
 
-ARGS	= -mips32 -g -Os -fno-pic -fno-pie -mno-abicalls -nostdlib -flto -ffreestanding
+ARGS	= -mips32 -g -Os -fno-pic -fno-pie -flto -ffreestanding
+ARGS	+= -nostdlib -nostartfiles -specs=nosys.specs
 ARGS	+= -Wall -Wextra -Wno-unused-variable -Wno-unused-const-variable -Wno-unused-function
-DEFS	= -DVARIANT=VARIANT_$(shell echo '$(VARIANT)' | tr '[:lower:]' '[:upper:]')
+DEFS	= -DJZ4755=1
 CFLAGS	= -std=gnu17 $(ARGS) $(DEFS)
 ASFLAGS	= $(ARGS) $(DEFS)
-LDFLAGS	= $(ARGS) -Xlinker --gc-sections
+LDFLAGS	= $(ARGS) -Xlinker --gc-sections -G0
 
 .DELETE_ON_ERROR:
+.SECONDARY:
 
 .PHONY: all
-all: stage1/$(NAME)_stage1.bin stage2/$(NAME)_stage2.bin
+all: build/$(NAME).bin
 
 # Fill the backup section
 %.bin: %.elf
 	$(OBJCOPY) -O binary --gap-fill 0xff $< $@
 
-stage1/%.elf: stage1/stage1_main.o $(OBJ:%.o=stage1/%.o) | stage1
-	$(LD) -o $@ $^ $(LDFLAGS) -T stage1.ld
+build/%.elf: build/main.o $(OBJ:%.o=build/%.o) | build
+	$(LD) -o $@ $^ $(LDFLAGS) -T bootrom.ld
 	$(SIZE) $@
 
-stage2/%.elf: stage2/stage2_main.o $(OBJ:%.o=stage2/%.o) | stage2
-	$(LD) -o $@ $^ $(LDFLAGS) -T stage2.ld
-	$(SIZE) $@
-
-stage1/%.o: %.c | stage1
+build/%.o: %.c | build
 	$(CC) -DSTAGE=1 $(CFLAGS) -o $@ -c $<
 
-stage2/%.o: %.c | stage2
-	$(CC) -DSTAGE=2 $(CFLAGS) -o $@ -c $<
-
-stage1/%.o: %.S | stage1
+build/%.o: %.S | build
 	$(AS) -DSTAGE=1 $(ASFLAGS) -o $@ -c $<
 
-stage2/%.o: %.S | stage2
-	$(AS) -DSTAGE=2 $(ASFLAGS) -o $@ -c $<
-
-stage1 stage2: %:
+build: %:
 	mkdir -p $@
 
 .PHONY: clean
 clean:
-	rm -rf stage1 stage2
-
-# Special requirements
-
-stage2/keyboard_test.o: image_keyboard.h image_keyboard_regions.h
-
-image_keyboard.h: image_to_header.py keyboard.png
-	./$^ $@
-
-image_keyboard_regions.h: image_find_regions.py keyboard_regions.png
-	./$^ $@ -c 0x66ccff
+	rm -rf build
