@@ -165,7 +165,8 @@ void gpio_nand_busy_catch(void)
 {
     // Low level trigger
     gpc->DIR.C = BIT(GPIOC_PINS_NAND_BUSY);
-    gpc->FLG.C = BIT(GPIOC_PINS_NAND_BUSY);
+    // FLG.C is actually located at DAT.S
+    gpc->DAT.S = BIT(GPIOC_PINS_NAND_BUSY);
 }
 
 void gpio_nand_busy_wait(void)
@@ -174,7 +175,8 @@ void gpio_nand_busy_wait(void)
     while (!(gpc->FLG.D & BIT(GPIOC_PINS_NAND_BUSY)));
     // High level trigger
     gpc->DIR.S = BIT(GPIOC_PINS_NAND_BUSY);
-    gpc->FLG.C = BIT(GPIOC_PINS_NAND_BUSY);
+    // FLG.C is actually located at DAT.S
+    gpc->DAT.S = BIT(GPIOC_PINS_NAND_BUSY);
     // Wait for high level
     while (!(gpc->FLG.D & BIT(GPIOC_PINS_NAND_BUSY)));
 }
