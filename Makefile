@@ -1,7 +1,7 @@
 NAME	:= bootrom
 
 SRC	:= helper.c startup.S
-SRC	+= gpio.c cgu.c uart.c #nand.c
+SRC	+= gpio.c cgu.c uart.c nand.c
 
 OBJ	= $(patsubst %.S,%.o,$(SRC:%.c=%.o))
 

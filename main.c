@@ -3,7 +3,7 @@
 #include "cgu.h"
 #include "gpio.h"
 #include "uart.h"
-//#include "nand.h"
+#include "nand.h"
 #include "cp0.h"
 
 static fw_args_t _fw_args = {
@@ -37,16 +37,16 @@ void print_arch()
 
 int main()
 {
-	//cgu_pll_init();
-	//gpio_init();
+	cgu_pll_init();
+	gpio_init();
 
-	//uart_init();
+	uart_init();
 	uart_puts("\r\n*** usbboot stage1 JZ");
 	uart_puthex(fw_args->cpu_id, 4);
 	uart_puts(" ***\r\n");
 	print_arch();
 
-	//nand_init();
-	//nand_print_id();
+	nand_init();
+	nand_print_id();
 	for (;;);
 }

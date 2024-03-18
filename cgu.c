@@ -22,7 +22,7 @@ struct cgu_t {
 struct cgu_t {
     /* 00 */ _IO uint32_t CPCCR;
     /* 04 */ _IO uint32_t LCR;
-                  uint32_t RESERVED_VAR[2];
+                 uint32_t RESERVED_VAR[2];
     /* 10 */ _IO uint32_t CPPCR;
     /* 14 */ _IO uint32_t CPPSR;
                  uint32_t RESERVED_VAR[2];
