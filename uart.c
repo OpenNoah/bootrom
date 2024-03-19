@@ -47,6 +47,7 @@ void uart_init(void)
 	// DLAB = 1, 8-bit
 	uart->ULCR = 0b10000011;
 
+#if 0
 	// Baud rate calculations
 	if (cgu_ex_clk_rate() == MHZ(12) && BAUDRATE == 115200) {
 		uart->UMR = 17;
@@ -60,6 +61,7 @@ void uart_init(void)
 		uart->UDLLR = 6;
 		uart->UDLHR = 0;
 	}
+#endif
 
 	// DLAB = 0, 8-bit
 	uart->ULCR = 0b00000011;

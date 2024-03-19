@@ -72,7 +72,7 @@ static inline void nand_fce_restore(const unsigned bank)
 
 void nand_init(void)
 {
-    const unsigned bank = 0;
+    const unsigned bank = 1;
     nand_fce_restore(bank);
 
     // Reset and wait
@@ -103,7 +103,7 @@ void nand_init(void)
 
 void nand_print_id(void)
 {
-    const unsigned bank0 = 0;
+    const unsigned bank0 = 1;
     *NAND_CMD_PORT(bank0) = 0x90;
     *NAND_ADDR_PORT(bank0) = 0x00;
 
@@ -124,7 +124,7 @@ void nand_read_pages(void *dst, uint32_t start, uint32_t count, int oob)
     uart_puthex(count, 8);
     uart_puts("\r\n");
 
-    const unsigned bank = 0;
+    const unsigned bank = 1;
     uint32_t *buf32 = dst;
     while (count--) {
         gpio_nand_busy_catch();
