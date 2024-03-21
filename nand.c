@@ -54,9 +54,9 @@ static struct bch_t {
 #endif
 
 static uint32_t is_busshare = 1;
-static uint32_t page_size   = 4096;
-static uint32_t oob_size    = 128;
-static uint32_t row_cycles  = 3;
+static uint32_t page_size   = 0;
+static uint32_t oob_size    = 0;
+static uint32_t row_cycles  = 0;
 
 static inline void nand_fce_assert(const unsigned bank)
 {
@@ -70,7 +70,7 @@ static inline void nand_fce_restore(const unsigned bank)
     nand->NFCSR = (nand->NFCSR & ~mask) | (0x01 << (2 * (bank - 1)));
 }
 
-void nand_init(void)
+void nand_init()
 {
     const unsigned bank = 1;
     nand_fce_restore(bank);
@@ -101,7 +101,7 @@ void nand_init(void)
     oob_size = 16 * page_size / 512;
 }
 
-void nand_print_id(void)
+void nand_print_id()
 {
     const unsigned bank0 = 1;
     *NAND_CMD_PORT(bank0) = 0x90;
@@ -113,6 +113,45 @@ void nand_print_id(void)
         uart_puthex(id, 2);
     }
     uart_puts("\r\n");
+}
+
+#define CACHE_SIZE          16*1024
+#define CACHE_LINE_SIZE     32
+#define KSEG0               0x80000000
+
+#define SYNC_WB() __asm__ __volatile__ ("sync")
+
+#define Index_Writeback_Inv_D   0x01
+
+#define cache_op(op,addr)						\
+	__asm__ __volatile__(						\
+	"	.set	noreorder		\n"			\
+	"	.set	mips32\n\t		\n"			\
+	"	cache	%0, %1			\n"			\
+	"	.set	mips0			\n"			\
+	"	.set	reorder"					\
+	:										\
+	: "i" (op), "m" (*(unsigned char *)(addr)))
+
+void __dcache_writeback_all()
+{
+	uint32_t i;
+	for (i=KSEG0;i<KSEG0+CACHE_SIZE;i+=CACHE_LINE_SIZE)
+		cache_op(Index_Writeback_Inv_D, i);
+	SYNC_WB();
+}
+
+void nand_boot()
+{
+    // Read 8k from NAND to 0x80000000
+    nand_read_pages((void *)0x80000000, 0, 8192 / page_size, 0);
+    // Logging
+    uart_puts(__func__);
+    uart_puts(": now booting\r\n");
+    // Flush dcache
+    __dcache_writeback_all();
+    // Jump to offset 12
+    ((void(*)())0x8000000c)();
 }
 
 void nand_read_pages(void *dst, uint32_t start, uint32_t count, int oob)

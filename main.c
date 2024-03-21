@@ -48,5 +48,6 @@ int main()
 
 	nand_init();
 	nand_print_id();
+	nand_boot();
 	for (;;);
 }
