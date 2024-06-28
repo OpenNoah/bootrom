@@ -4,7 +4,7 @@ MEMORY
   /* 8KiB of BootROM space */
   ROM(xr):    ORIGIN = 0x9fc00000, LENGTH = 0x2000
   /* 16KiB of SRAM is available initially, but use only the first 8KiB for BootROM */
-  RAM(xrw):   ORIGIN = 0x80002000, LENGTH = 0x2000
+  RAM(xrw):   ORIGIN = 0xf4000000, LENGTH = 0x2000
 }
 
 /* Stack starts from the end of available RAMs */
