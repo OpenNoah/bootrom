@@ -10,9 +10,6 @@ MEMORY
 /* Stack starts from the end of available RAMs */
 __stack_end__ = ORIGIN(RAM) + LENGTH(RAM);
 
-/* Entry Point */
-ENTRY(_header)
-
 /* Define output sections */
 SECTIONS
 {
@@ -76,6 +73,8 @@ SECTIONS
     . = ALIGN(4);
     *(.data)           /* .data sections */
     *(.data*)          /* .data* sections */
+    *(.got)
+    *(.got*)
     /* Special program code inside RAM */
     *(.ram)
     *(.ram*)

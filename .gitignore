@@ -1,11 +1,3 @@
-*.o
-*.elf
-*.bin
-bmImage
-upgrade*.bin
-.vscode*
-
-*.sh
-
-image_keyboard.h
-image_keyboard_regions.h
+.vscode/
+.zig-cache/
+zig-out/
