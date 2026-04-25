@@ -2,6 +2,7 @@ const std = @import("std");
 
 const soc = @import("soc.zig");
 const mmio = @import("mmio.zig");
+const boot = @import("boot.zig");
 
 const IO = extern struct {
     CTRL: mmio.Mmio(packed struct {
@@ -168,10 +169,10 @@ pub fn peripheral(ph: soc.Peripheral) type {
             return @intCast(v >> 8);
         }
 
-        fn sd_read(self: *@This(), addr: u32, buf: []u8) u32 {
+        fn sd_read(self: *@This(), bofs: u32, buf: []u8) u32 {
             Hw.CMD.write(.{ .CMD_INDEX = @intFromEnum(CmdR1.READ_SINGLE_BLOCK) });
             Hw.CMDAT.write(.{ .WRITE_READ = 0, .DATA_EN = 1, .RESPONSE_FORMAT = 1 });
-            Hw.ARG.write(addr);
+            Hw.ARG.write(bofs);
             Hw.NOB.write(1);
             Hw.CTRL.write(.{ .START_OP = 1 });
             while (Hw.STAT.read().END_CMD_RES != 1) {}
@@ -212,26 +213,13 @@ pub fn peripheral(ph: soc.Peripheral) type {
             Hw.BLKLEN.write(512);
         }
 
-        pub fn boot(self: *@This(), ph_uart: anytype) void {
+        pub fn load(self: *@This()) void {
+            // Load 8KiB from SD card
             var buf: [512]u8 = undefined;
-            _ = self.sd_read(0, &buf);
-            ph_uart.puts("SD 0x");
-            var v: u32 = 0;
-            v |= @as(u32, buf[0]) << 0;
-            v |= @as(u32, buf[1]) << 8;
-            v |= @as(u32, buf[2]) << 16;
-            v |= @as(u32, buf[3]) << 24;
-            ph_uart.puthex(v, 8);
-            ph_uart.puts("\r\n");
-            _ = self.sd_read(1, &buf);
-            ph_uart.puts("SD 0x");
-            v = 0;
-            v |= @as(u32, buf[0]) << 0;
-            v |= @as(u32, buf[1]) << 8;
-            v |= @as(u32, buf[2]) << 16;
-            v |= @as(u32, buf[3]) << 24;
-            ph_uart.puthex(v, 8);
-            ph_uart.puts("\r\n");
+            for (0..8 * 1024 / 512) |bofs| {
+                _ = self.sd_read(bofs, &buf);
+                boot.load(&buf);
+            }
         }
     };
 }

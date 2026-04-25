@@ -1,8 +1,8 @@
 /* Specify the memory areas */
 MEMORY
 {
-  /* 4KiB of BootROM space */
-  ROM(xr):    ORIGIN = 0x9fc00000, LENGTH = 0x1000
+  /* 8KiB of BootROM space */
+  ROM(xr):    ORIGIN = 0x9fc00000, LENGTH = 0x2000
   /* 16KiB of SRAM is available, skip the first 8KiB used for bootloader data */
   RAM(xrw):   ORIGIN = 0x80002000, LENGTH = 0x2000
 }

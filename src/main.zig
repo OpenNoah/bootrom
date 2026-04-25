@@ -5,6 +5,7 @@ const soc = @import("soc.zig");
 const cp0 = @import("cp0.zig");
 const uart = @import("uart.zig");
 const msc = @import("msc.zig");
+const boot = @import("boot.zig");
 
 comptime {
     @export(&@import("startup.zig").entry, .{ .name = "entry" });
@@ -28,7 +29,7 @@ pub fn main() noreturn {
     const ph_uart = uart.peripheral(switch (bopt.soc) {
         .jz4740 => .UART0,
         .jz4750 => .UART0,
-        .jz4755 => .UART1,
+        .jz4755 => .UART0,
     });
 
     ph_uart.init();
@@ -38,12 +39,13 @@ pub fn main() noreturn {
     ));
     print_arch(ph_uart);
 
+    boot.init();
     if (bopt.soc == .jz4750) {
         // Load 8KiB data and boot from MSC0
         var ph_msc0 = msc.peripheral(.MSC0){};
         ph_msc0.init();
-        ph_msc0.boot(ph_uart);
+        ph_msc0.load();
     }
-
-    while (true) {}
+    boot.debug(ph_uart);
+    boot.boot();
 }
