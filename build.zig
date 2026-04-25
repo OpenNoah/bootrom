@@ -44,6 +44,9 @@ pub fn build(b: *std.Build) void {
         elf.link_gc_sections = true;
         // LTO seems to cause compiler bugs
         // elf.want_lto = true;
+        // No need for PIC & PIE
+        elf.root_module.pic = false;
+        elf.pie = false;
 
         const installElf = b.addInstallBinFile(
             elf.getEmittedBin(),

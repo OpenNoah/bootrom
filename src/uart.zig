@@ -1,6 +1,7 @@
+const soc = @import("soc.zig");
 const mmio = @import("mmio.zig");
 
-pub const IO = extern struct {
+const IO = extern struct {
     r0: extern union {
         URBR: mmio.Mmio(u32),
         UTHR: mmio.Mmio(u32),
@@ -62,8 +63,8 @@ const Hw = struct {
     }
 };
 
-pub fn peripheral(ph: anytype) Hw {
+pub fn peripheral(ph: soc.Peripheral) Hw {
     return .{
-        .hw = io(ph.base),
+        .hw = soc.peripheral(IO, ph),
     };
 }
