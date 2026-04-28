@@ -5,6 +5,7 @@ const soc = @import("soc.zig");
 const cp0 = @import("cp0.zig");
 const uart = @import("uart.zig");
 const msc = @import("msc.zig");
+const nand = @import("nand.zig");
 const boot = @import("boot.zig");
 
 comptime {
@@ -40,7 +41,13 @@ pub fn main() noreturn {
     print_arch(ph_uart);
 
     boot.init();
-    if (bopt.soc == .jz4750) {
+    if (bopt.soc == .jz4740) {
+        // Load 8KiB data and boot from NAND
+        var ph_nand = nand.peripheral(.NAND_CS1){};
+        ph_nand.init();
+        ph_nand.print_id(ph_uart);
+        ph_nand.load(ph_uart);
+    } else if (bopt.soc == .jz4750) {
         // Load 8KiB data and boot from MSC0
         var ph_msc0 = msc.peripheral(.MSC0){};
         ph_msc0.init();

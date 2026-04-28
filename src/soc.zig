@@ -13,6 +13,11 @@ fn pa_to_kseg1(v: u32) u32 {
 
 pub const Peripheral = switch (bopt.soc) {
     .jz4740 => enum {
+        NAND,
+        NAND_CS1,
+        NAND_CS2,
+        NAND_CS3,
+        NAND_CS4,
         UART0,
         UART1,
         UART2,
@@ -45,6 +50,11 @@ pub const Peripheral = switch (bopt.soc) {
 pub fn base_addr(ph: Peripheral) u32 {
     return pa_to_kseg1(switch (bopt.soc) {
         .jz4740 => switch (ph) {
+            .NAND => 0x13010050,
+            .NAND_CS1 => 0x18000000,
+            .NAND_CS2 => 0x14000000,
+            .NAND_CS3 => 0x0c000000,
+            .NAND_CS4 => 0x08000000,
             .UART0 => 0x10030000,
             .UART1 => 0x10031000,
             .UART2 => 0x10032000,

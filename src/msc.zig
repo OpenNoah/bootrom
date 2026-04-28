@@ -220,6 +220,7 @@ pub fn peripheral(ph: soc.Peripheral) type {
                 _ = self.sd_read(bofs, &buf);
                 boot.load(&buf);
             }
+            boot.set_entry_offset(0);
         }
     };
 }

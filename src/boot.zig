@@ -1,9 +1,11 @@
 const load_addr = 0x80000000;
 
 var mem: [*]u8 = @ptrFromInt(load_addr);
+var entry: u32 = load_addr;
 
 pub fn init() void {
     mem = @ptrFromInt(load_addr);
+    entry = load_addr;
 }
 
 pub fn load(data: []const u8) void {
@@ -27,7 +29,11 @@ pub fn debug(ph_uart: anytype) void {
     }
 }
 
+pub fn set_entry_offset(ofs: u32) void {
+    entry = load_addr + ofs;
+}
+
 pub fn boot() noreturn {
-    const jmp: *const fn () noreturn = @ptrFromInt(load_addr);
+    const jmp: *const fn () noreturn = @ptrFromInt(entry);
     jmp();
 }

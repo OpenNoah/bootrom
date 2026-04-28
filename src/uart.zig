@@ -54,7 +54,7 @@ const Hw = struct {
             self.putc(c);
     }
 
-    pub fn puthex(self: Hw, v: anytype, w: u32) void {
+    pub fn puthex(self: Hw, v: usize, w: comptime_int) void {
         for (0..w) |i| {
             const fv: u8 = @intCast((v >> @intCast(4 * (w - 1 - i))) & 0x0f);
             const c: u8 = if (fv < 10) fv + '0' else fv + 'a' - 10;
