@@ -106,6 +106,7 @@ const IO = extern struct {
 pub fn peripheral(ph: soc.Peripheral) type {
     return struct {
         rca: u32 = 0,
+        ccs: bool = false,
 
         const Hw = soc.peripheral(IO, ph);
 
@@ -172,7 +173,7 @@ pub fn peripheral(ph: soc.Peripheral) type {
         fn sd_read(self: *@This(), bofs: u32, buf: []u8) u32 {
             Hw.CMD.write(.{ .CMD_INDEX = @intFromEnum(CmdR1.READ_SINGLE_BLOCK) });
             Hw.CMDAT.write(.{ .WRITE_READ = 0, .DATA_EN = 1, .RESPONSE_FORMAT = 1 });
-            Hw.ARG.write(bofs);
+            Hw.ARG.write(if (self.ccs) bofs else bofs * 512);
             Hw.NOB.write(1);
             Hw.CTRL.write(.{ .START_OP = 1 });
             while (Hw.STAT.read().END_CMD_RES != 1) {}
@@ -183,8 +184,6 @@ pub fn peripheral(ph: soc.Peripheral) type {
                 v <<= 16;
                 v |= Hw.RES.read();
             }
-
-            _ = self;
 
             // _ = buf;
             for (0..buf.len / 4) |ofs| {
@@ -203,7 +202,8 @@ pub fn peripheral(ph: soc.Peripheral) type {
             // The HCS (Host Capacity Support) bit set to 1 indicates that the host supports SDHC or SDXC Card
             // XPC set to Maximum Performance
             // OCR set to support 2.7-3.6V
-            _ = self.sd_cmd(AcmdR3.SD_SEND_OP_COND, 0x50ff8000);
+            const ocr = self.sd_cmd(AcmdR3.SD_SEND_OP_COND, 0x50ff8000);
+            self.ccs = ((ocr >> 30) & 1) != 0;
             _ = self.sd_cmd(CmdR2.ALL_SEND_CID, 0);
             const v = sd_cmd(self, CmdR6.SEND_RELATIVE_ADDR, 0);
             self.rca = v & 0xffff0000;
