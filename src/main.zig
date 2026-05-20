@@ -30,6 +30,7 @@ pub fn main() noreturn {
     const ph_uart = uart.peripheral(switch (bopt.soc) {
         .jz4740 => .UART0,
         .jz4750 => .UART0,
+        .jz4750l => .UART0,
         .jz4755 => .UART0,
     });
 
@@ -47,7 +48,7 @@ pub fn main() noreturn {
         ph_nand.init();
         ph_nand.print_id(ph_uart);
         ph_nand.load(ph_uart);
-    } else if (bopt.soc == .jz4750) {
+    } else if (bopt.soc == .jz4750 or bopt.soc == .jz4750l) {
         // Load 8KiB data and boot from MSC0
         var ph_msc0 = msc.peripheral(.MSC0){};
         ph_msc0.init();

@@ -15,10 +15,11 @@ pub fn build(b: *std.Build) void {
     const Soc = enum {
         jz4740,
         jz4750,
+        jz4750l,
         jz4755,
     };
 
-    inline for (.{ Soc.jz4740, Soc.jz4750, Soc.jz4755 }) |soc| {
+    inline for (.{ Soc.jz4740, Soc.jz4750, Soc.jz4750l, Soc.jz4755 }) |soc| {
         const elf = b.addExecutable(.{
             .name = @tagName(soc),
             .root_module = b.createModule(.{

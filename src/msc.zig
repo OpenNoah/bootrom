@@ -243,7 +243,11 @@ pub fn peripheral(ph: soc.Peripheral) type {
                 _ = self.sd_read(bofs, &buf);
                 boot.load(&buf);
             }
-            boot.set_entry_offset(0);
+            if (bopt.soc == .jz4750l) {
+                boot.set_entry_offset(0x0000_0004);
+            } else {
+                boot.set_entry_offset(0x0000_0000);
+            }
         }
     };
 }
