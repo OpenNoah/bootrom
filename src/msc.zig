@@ -1,4 +1,5 @@
 const std = @import("std");
+const bopt = @import("build_options");
 
 const soc = @import("soc.zig");
 const mmio = @import("mmio.zig");
@@ -107,11 +108,13 @@ pub fn peripheral(ph: soc.Peripheral) type {
     return struct {
         rca: u32 = 0,
         ccs: bool = false,
+        mmc: bool = false,
 
         const Hw = soc.peripheral(IO, ph);
 
         const CmdR1 = enum(u6) {
             GO_IDLE_STATE = 0,
+            SET_RELATIVE_ADDR = 3,
             SELECT_CARD = 7,
             SEND_STATUS = 13,
             SET_BLOCKLEN = 16,
@@ -122,6 +125,10 @@ pub fn peripheral(ph: soc.Peripheral) type {
 
         const CmdR2 = enum(u6) {
             ALL_SEND_CID = 2,
+        };
+
+        const CmdR3 = enum(u6) {
+            SEND_OP_COND = 1,
         };
 
         const CmdR6 = enum(u6) {
@@ -136,7 +143,7 @@ pub fn peripheral(ph: soc.Peripheral) type {
             SD_SEND_OP_COND = 41,
         };
 
-        fn sd_cmd(self: *@This(), cmd: anytype, arg: u32) switch (@TypeOf(cmd)) {
+        fn sd_cmd(self: *@This(), cmd: anytype, arg: u32) !switch (@TypeOf(cmd)) {
             CmdR2 => u128,
             else => u32,
         } {
@@ -149,7 +156,7 @@ pub fn peripheral(ph: soc.Peripheral) type {
                 else => 1,
             };
             _ = switch (@TypeOf(cmd)) {
-                AcmdR3 => sd_cmd(self, CmdR1.APP_CMD, 0),
+                AcmdR3 => try sd_cmd(self, CmdR1.APP_CMD, 0),
                 else => {},
             };
             Hw.CMD.write(.{ .CMD_INDEX = @intFromEnum(cmd) });
@@ -157,6 +164,8 @@ pub fn peripheral(ph: soc.Peripheral) type {
             Hw.ARG.write(arg);
             Hw.CTRL.write(.{ .START_OP = 1 });
             while (Hw.STAT.read().END_CMD_RES != 1) {}
+            if (Hw.STAT.read().TIME_OUT_RES != 0)
+                return error.NoResponse;
 
             const resp_len = switch (@TypeOf(cmd)) {
                 CmdR2 => 136,
@@ -198,18 +207,32 @@ pub fn peripheral(ph: soc.Peripheral) type {
         }
 
         pub fn init(self: *@This()) void {
-            _ = self.sd_cmd(CmdR1.GO_IDLE_STATE, 0);
-            // The HCS (Host Capacity Support) bit set to 1 indicates that the host supports SDHC or SDXC Card
-            // XPC set to Maximum Performance
-            // OCR set to support 2.7-3.6V
-            const ocr = self.sd_cmd(AcmdR3.SD_SEND_OP_COND, 0x50ff8000);
-            self.ccs = ((ocr >> 30) & 1) != 0;
-            _ = self.sd_cmd(CmdR2.ALL_SEND_CID, 0);
-            const v = sd_cmd(self, CmdR6.SEND_RELATIVE_ADDR, 0);
-            self.rca = v & 0xffff0000;
-            _ = self.sd_cmd(CmdR1.SELECT_CARD, self.rca);
-            _ = self.sd_cmd(CmdR1.SEND_STATUS, self.rca);
-            _ = self.sd_cmd(CmdR1.SET_BLOCKLEN, 512);
+            _ = self.sd_cmd(CmdR1.GO_IDLE_STATE, 0) catch {};
+            // Voltage = 2.7-3.6V
+            // Check pattern = 0x39
+            if (self.sd_cmd(CmdR7.SEND_IF_COND, 0x0000_0139)) |_| {
+                // SD card
+                self.mmc = false;
+                // The HCS (Host Capacity Support) bit set to 1 indicates that the host supports SDHC or SDXC Card
+                // XPC set to Maximum Performance
+                // OCR set to support 2.7-3.6V
+                const ocr = self.sd_cmd(AcmdR3.SD_SEND_OP_COND, 0x50ff_8000) catch 0;
+                self.ccs = ((ocr >> 30) & 1) != 0;
+                _ = self.sd_cmd(CmdR2.ALL_SEND_CID, 0) catch {};
+                const v = sd_cmd(self, CmdR6.SEND_RELATIVE_ADDR, 0) catch 0;
+                self.rca = v & 0xffff_0000;
+            } else |_| {
+                // MMC card
+                self.mmc = true;
+                // OCR set to support 2.7-3.6V
+                _ = self.sd_cmd(CmdR3.SEND_OP_COND, 0x00ff_8000) catch 0;
+                _ = self.sd_cmd(CmdR2.ALL_SEND_CID, 0) catch {};
+                self.rca = 0x3939_0000;
+                _ = self.sd_cmd(CmdR1.SET_RELATIVE_ADDR, self.rca) catch {};
+            }
+            _ = self.sd_cmd(CmdR1.SELECT_CARD, self.rca) catch {};
+            _ = self.sd_cmd(CmdR1.SEND_STATUS, self.rca) catch {};
+            _ = self.sd_cmd(CmdR1.SET_BLOCKLEN, 512) catch {};
             Hw.BLKLEN.write(512);
         }
 
